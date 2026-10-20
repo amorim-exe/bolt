@@ -120,6 +120,33 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     await selectWorkspace(state.selectedWorkspace!.id);
   }
 
+  Future<RequestEntity?> saveRequest({
+    int? id,
+    required String name,
+    required String url,
+    required String method,
+    required String headersJson,
+    required String queryParamsJson,
+    String? body,
+  }) async {
+    final workspace = state.selectedWorkspace;
+    if (workspace == null) return null;
+
+    final request = await WorkspaceService.saveRequest(
+      id: id,
+      name: name,
+      url: url,
+      method: method,
+      headersJson: headersJson,
+      queryParamsJson: queryParamsJson,
+      body: body,
+      workspaceId: workspace.id,
+    );
+    await loadWorkspaces();
+    await selectWorkspace(request.workspaceId);
+    return request;
+  }
+
   Future<void> deleteRequest(int id) async {
     await WorkspaceService.deleteRequest(id);
     if (state.selectedWorkspace != null) {

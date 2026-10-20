@@ -4,6 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../controllers/http_client_provider.dart';
 
+class _HeaderPreset {
+  final String label;
+  final String key;
+  final String value;
+
+  const _HeaderPreset(this.label, this.key, this.value);
+}
+
+const _headerPresets = [
+  _HeaderPreset(
+      'Authorization: Bearer token', 'Authorization', 'Bearer {{token}}'),
+  _HeaderPreset('Authorization: Basic', 'Authorization', 'Basic '),
+  _HeaderPreset('X-API-Key', 'X-API-Key', '{{apiKey}}'),
+  _HeaderPreset('Content-Type: JSON', 'Content-Type', 'application/json'),
+  _HeaderPreset('Content-Type: form-urlencoded', 'Content-Type',
+      'application/x-www-form-urlencoded'),
+  _HeaderPreset('Accept: JSON', 'Accept', 'application/json'),
+  _HeaderPreset('Accept: qualquer formato', 'Accept', '*/*'),
+  _HeaderPreset('Cache-Control: no-cache', 'Cache-Control', 'no-cache'),
+];
+
 class HeadersEditorView extends ConsumerWidget {
   const HeadersEditorView({super.key});
 
@@ -12,7 +33,8 @@ class HeadersEditorView extends ConsumerWidget {
     final state = ref.watch(httpClientProvider);
     final headers = state.params.headers;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final textColor =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
     return Padding(
       padding: const EdgeInsets.all(12.0),
@@ -22,17 +44,40 @@ class HeadersEditorView extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Headers da Requisição', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-              ElevatedButton.icon(
-                onPressed: () => ref.read(httpClientProvider.notifier).addHeader(),
-                icon: const Icon(Icons.add, size: 14),
-                label: const Text('Adicionar Header'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 14),
-                ),
+              const Text('Headers da Requisição',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PopupMenuButton<_HeaderPreset>(
+                    tooltip: 'Presets de headers',
+                    icon: const Icon(Icons.bolt_outlined),
+                    onSelected: (preset) => ref
+                        .read(httpClientProvider.notifier)
+                        .addHeaderPreset(key: preset.key, value: preset.value),
+                    itemBuilder: (context) => [
+                      for (final preset in _headerPresets)
+                        PopupMenuItem(
+                          value: preset,
+                          child: Text(preset.label),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () =>
+                        ref.read(httpClientProvider.notifier).addHeader(),
+                    icon: const Icon(Icons.add, size: 14),
+                    label: const Text('Adicionar Header'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      textStyle: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -56,15 +101,22 @@ class HeadersEditorView extends ConsumerWidget {
                             Checkbox(
                               value: header.isEnabled,
                               onChanged: (val) {
-                                ref.read(httpClientProvider.notifier).updateHeader(index, isEnabled: val ?? true);
+                                ref
+                                    .read(httpClientProvider.notifier)
+                                    .updateHeader(index,
+                                        isEnabled: val ?? true);
                               },
                             ),
                             Expanded(
                               flex: 2,
                               child: TextField(
-                                controller: TextEditingController(text: header.key)
-                                  ..selection = TextSelection.collapsed(offset: header.key.length),
-                                onChanged: (val) => ref.read(httpClientProvider.notifier).updateHeader(index, key: val),
+                                controller:
+                                    TextEditingController(text: header.key)
+                                      ..selection = TextSelection.collapsed(
+                                          offset: header.key.length),
+                                onChanged: (val) => ref
+                                    .read(httpClientProvider.notifier)
+                                    .updateHeader(index, key: val),
                                 decoration: const InputDecoration(
                                   hintText: 'Chave (ex: Authorization)',
                                   isDense: true,
@@ -77,9 +129,13 @@ class HeadersEditorView extends ConsumerWidget {
                             Expanded(
                               flex: 3,
                               child: TextField(
-                                controller: TextEditingController(text: header.value)
-                                  ..selection = TextSelection.collapsed(offset: header.value.length),
-                                onChanged: (val) => ref.read(httpClientProvider.notifier).updateHeader(index, value: val),
+                                controller:
+                                    TextEditingController(text: header.value)
+                                      ..selection = TextSelection.collapsed(
+                                          offset: header.value.length),
+                                onChanged: (val) => ref
+                                    .read(httpClientProvider.notifier)
+                                    .updateHeader(index, value: val),
                                 decoration: const InputDecoration(
                                   hintText: 'Valor (ex: Bearer token...)',
                                   isDense: true,
@@ -89,8 +145,11 @@ class HeadersEditorView extends ConsumerWidget {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 18),
-                              onPressed: () => ref.read(httpClientProvider.notifier).removeHeader(index),
+                              icon: const Icon(Icons.delete_outline,
+                                  color: AppColors.error, size: 18),
+                              onPressed: () => ref
+                                  .read(httpClientProvider.notifier)
+                                  .removeHeader(index),
                             ),
                           ],
                         ),

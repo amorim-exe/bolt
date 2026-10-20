@@ -6,6 +6,7 @@ import 'package:bolt/features/http_client/presentation/widgets/headers_editor_vi
 import 'package:bolt/features/http_client/presentation/widgets/params_editor_view.dart';
 import 'package:bolt/features/workspace/data/models/request_entity.dart';
 import 'package:bolt/features/workspace/presentation/workspace_provider.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +27,8 @@ class _HomePageState extends ConsumerState<HomePage>
   late TabController _requestTabController;
   late TabController _responseTabController;
   String _bodyText = '';
+  int? _activeRequestId;
+  String? _activeRequestName;
 
   @override
   void initState() {
@@ -58,9 +61,7 @@ class _HomePageState extends ConsumerState<HomePage>
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF20242B)
-            : const Color(0xFFF0F2F5),
+        color: isDark ? const Color(0xFF20242B) : const Color(0xFFF0F2F5),
         border: Border(
           bottom: BorderSide(color: borderColor),
         ),
@@ -70,9 +71,7 @@ class _HomePageState extends ConsumerState<HomePage>
           Icon(
             icon,
             size: 16,
-            color: isDark
-                ? Colors.lightBlueAccent
-                : Colors.blueGrey,
+            color: isDark ? Colors.lightBlueAccent : Colors.blueGrey,
           ),
           const SizedBox(width: 8),
           Text(
@@ -80,9 +79,7 @@ class _HomePageState extends ConsumerState<HomePage>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: isDark
-                  ? Colors.white70
-                  : Colors.blueGrey.shade700,
+              color: isDark ? Colors.white70 : Colors.blueGrey.shade700,
             ),
           ),
           const Spacer(),
@@ -462,18 +459,41 @@ class _HomePageState extends ConsumerState<HomePage>
                                   ? 'Requisição Principal'
                                   : currentState.params.url.split('/').last;
 
-                          await ref
+                          final body = _encodeBody(currentState.params);
+                          final saved = await ref
                               .read(workspaceProvider.notifier)
-                              .createRequest(
-                                name: name,
+                              .saveRequest(
+                                id: _activeRequestId,
+                                name: _activeRequestName ?? name,
                                 url: currentState.params.url,
                                 method: currentState.params.method.name,
-                                headersJson:
-                                    jsonEncode(currentState.params.headers),
-                                queryParamsJson:
-                                    jsonEncode(currentState.params.queryParams),
-                                body: currentState.params.body,
+                                headersJson: jsonEncode([
+                                  for (final header
+                                      in currentState.params.headers)
+                                    {
+                                      'key': header.key,
+                                      'value': header.value,
+                                      'isEnabled': header.isEnabled,
+                                    },
+                                ]),
+                                queryParamsJson: jsonEncode([
+                                  for (final param
+                                      in currentState.params.queryParams)
+                                    {
+                                      'key': param.key,
+                                      'value': param.value,
+                                      'isEnabled': param.isEnabled,
+                                    },
+                                ]),
+                                body: body,
                               );
+
+                          if (saved != null) {
+                            setState(() {
+                              _activeRequestId = saved.id;
+                              _activeRequestName = saved.name;
+                            });
+                          }
 
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -530,19 +550,7 @@ class _HomePageState extends ConsumerState<HomePage>
                               children: [
                                 const ParamsEditorView(),
                                 const HeadersEditorView(),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: CodeEditorWidget(
-                                    initialText: _bodyText,
-                                    onChanged: (val) {
-                                      _bodyText = val;
-                                      ref
-                                          .read(httpClientProvider.notifier)
-                                          .updateBody(val);
-                                    },
-                                    isDark: isDark,
-                                  ),
-                                ),
+                                _buildBodyEditor(state.params, isDark),
                               ],
                             ),
                           ),
@@ -552,7 +560,6 @@ class _HomePageState extends ConsumerState<HomePage>
                   ),
                   const SizedBox(height: 20),
 
-                 
                   // Área de Resposta
                   Expanded(
                     flex: 1,
@@ -628,12 +635,10 @@ class _HomePageState extends ConsumerState<HomePage>
                                 // BODY
                                 Builder(
                                   builder: (context) {
-                                    final responseText =
-                                        state.response == null
-                                            ? ''
-                                            : const JsonEncoder.withIndent('  ')
-                                                .convert(
-                                                    state.response!.data);
+                                    final responseText = state.response == null
+                                        ? ''
+                                        : const JsonEncoder.withIndent('  ')
+                                            .convert(state.response!.data);
 
                                     return Column(
                                       children: [
@@ -694,14 +699,14 @@ class _HomePageState extends ConsumerState<HomePage>
                                 // HEADERS
                                 Builder(
                                   builder: (context) {
-                                    final headersText = state
-                                            .response?.headers.entries
-                                            .map(
-                                              (entry) =>
-                                                  '${entry.key}: ${entry.value.join(", ")}',
-                                            )
-                                            .join('\n') ??
-                                        '';
+                                    final headersText =
+                                        state.response?.headers.entries
+                                                .map(
+                                                  (entry) =>
+                                                      '${entry.key}: ${entry.value.join(", ")}',
+                                                )
+                                                .join('\n') ??
+                                            '';
 
                                     return Column(
                                       children: [
@@ -738,62 +743,58 @@ class _HomePageState extends ConsumerState<HomePage>
                                                     padding:
                                                         const EdgeInsets.all(
                                                             16),
-                                                    children: state.response!
-                                                        .headers.entries
-                                                        .map(
-                                                          (entry) => Padding(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .only(
-                                                              bottom: 10,
-                                                            ),
-                                                            child:
-                                                                SelectableText
-                                                                    .rich(
-                                                              TextSpan(
-                                                                children: [
+                                                    children:
+                                                        state.response!.headers
+                                                            .entries
+                                                            .map(
+                                                              (entry) =>
+                                                                  Padding(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .only(
+                                                                  bottom: 10,
+                                                                ),
+                                                                child:
+                                                                    SelectableText
+                                                                        .rich(
                                                                   TextSpan(
-                                                                    text:
-                                                                        '${entry.key}: ',
-                                                                    style:
-                                                                        TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .bold,
-                                                                      color: isDark
-                                                                          ? Colors
-                                                                              .lightBlueAccent
-                                                                          : Colors
-                                                                              .blue
-                                                                              .shade800,
-                                                                    ),
+                                                                    children: [
+                                                                      TextSpan(
+                                                                        text:
+                                                                            '${entry.key}: ',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                          color: isDark
+                                                                              ? Colors.lightBlueAccent
+                                                                              : Colors.blue.shade800,
+                                                                        ),
+                                                                      ),
+                                                                      TextSpan(
+                                                                        text: entry
+                                                                            .value
+                                                                            .join(', '),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          color: isDark
+                                                                              ? const Color(0xFFD6DEEB)
+                                                                              : const Color(0xFF273142),
+                                                                        ),
+                                                                      ),
+                                                                    ],
                                                                   ),
-                                                                  TextSpan(
-                                                                    text: entry
-                                                                        .value
-                                                                        .join(
-                                                                            ', '),
-                                                                    style:
-                                                                        TextStyle(
-                                                                      color: isDark
-                                                                          ? const Color(
-                                                                              0xFFD6DEEB)
-                                                                          : const Color(
-                                                                              0xFF273142),
-                                                                    ),
+                                                                  style:
+                                                                      const TextStyle(
+                                                                    fontFamily:
+                                                                        'monospace',
+                                                                    fontSize:
+                                                                        12,
                                                                   ),
-                                                                ],
+                                                                ),
                                                               ),
-                                                              style:
-                                                                  const TextStyle(
-                                                                fontFamily:
-                                                                    'monospace',
-                                                                fontSize: 12,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        )
-                                                        .toList(),
+                                                            )
+                                                            .toList(),
                                                   ),
                                           ),
                                         ),
@@ -808,10 +809,9 @@ class _HomePageState extends ConsumerState<HomePage>
                       ),
                     ),
                   ),
-
-        ],
-      ),
-    ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -830,8 +830,196 @@ class _HomePageState extends ConsumerState<HomePage>
         return AppColors.error;
       case HttpMethod.patch:
         return Colors.purpleAccent;
+      case HttpMethod.head:
+        return Colors.teal;
+      case HttpMethod.options:
+        return Colors.cyan;
+      case HttpMethod.trace:
+        return Colors.indigo;
+      case HttpMethod.connect:
+        return Colors.brown;
     }
   }
+
+  Widget _buildBodyEditor(RequestParams params, bool isDark) {
+    final notifier = ref.read(httpClientProvider.notifier);
+    final isForm = params.bodyMode == BodyMode.formData ||
+        params.bodyMode == BodyMode.formUrlEncoded;
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DropdownButton<BodyMode>(
+            value: params.bodyMode,
+            items: BodyMode.values
+                .map((mode) => DropdownMenuItem(
+                      value: mode,
+                      child: Text(switch (mode) {
+                        BodyMode.none => 'No body',
+                        BodyMode.json => 'JSON',
+                        BodyMode.text => 'Text',
+                        BodyMode.formUrlEncoded => 'x-www-form-urlencoded',
+                        BodyMode.formData => 'form-data',
+                        BodyMode.binary => 'Binary',
+                      }),
+                    ))
+                .toList(),
+            onChanged: (mode) {
+              if (mode != null) notifier.updateBodyMode(mode);
+            },
+          ),
+          if (params.bodyMode == BodyMode.json ||
+              params.bodyMode == BodyMode.text)
+            Expanded(
+              child: CodeEditorWidget(
+                key: ValueKey(params.bodyMode),
+                initialText: _bodyText,
+                onChanged: (value) {
+                  _bodyText = value;
+                  notifier.updateBody(value);
+                },
+                isDark: isDark,
+              ),
+            )
+          else if (isForm) ...[
+            Row(
+              children: [
+                Text(params.bodyMode == BodyMode.formData
+                    ? 'Multipart fields'
+                    : 'Form fields'),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Adicionar campo de texto',
+                  onPressed: () => notifier.addFormField(),
+                  icon: const Icon(Icons.add),
+                ),
+                if (params.bodyMode == BodyMode.formData)
+                  IconButton(
+                    tooltip: 'Adicionar arquivo',
+                    onPressed: () => notifier.addFormField(isFile: true),
+                    icon: const Icon(Icons.attach_file),
+                  ),
+              ],
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: params.formFields.length,
+                itemBuilder: (context, index) {
+                  final field = params.formFields[index];
+                  return Row(
+                    children: [
+                      Checkbox(
+                        value: field.isEnabled,
+                        onChanged: (value) => notifier.updateFormField(
+                          index,
+                          isEnabled: value ?? true,
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: TextFormField(
+                          key: ValueKey('form-key-$index'),
+                          initialValue: field.key,
+                          decoration: const InputDecoration(
+                            hintText: 'Key',
+                            isDense: true,
+                          ),
+                          onChanged: (value) =>
+                              notifier.updateFormField(index, key: value),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 3,
+                        child: field.isFile
+                            ? Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      field.value.isEmpty
+                                          ? 'Nenhum arquivo selecionado'
+                                          : field.value.split('/').last,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Selecionar arquivo',
+                                    onPressed: () async {
+                                      final file = await openFile();
+                                      if (file != null) {
+                                        notifier.updateFormField(
+                                          index,
+                                          value: file.path,
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.folder_open),
+                                  ),
+                                ],
+                              )
+                            : TextFormField(
+                                key: ValueKey('form-value-$index'),
+                                initialValue: field.value,
+                                decoration: const InputDecoration(
+                                  hintText: 'Value',
+                                  isDense: true,
+                                ),
+                                onChanged: (value) => notifier.updateFormField(
+                                  index,
+                                  value: value,
+                                ),
+                              ),
+                      ),
+                      IconButton(
+                        tooltip: 'Remover campo',
+                        onPressed: () => notifier.removeFormField(index),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ] else if (params.bodyMode == BodyMode.binary)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(params.body?.split('/').last ??
+                      'Nenhum arquivo selecionado'),
+                ),
+                IconButton(
+                  tooltip: 'Selecionar arquivo',
+                  onPressed: () async {
+                    final file = await openFile();
+                    if (file != null) notifier.updateBody(file.path);
+                  },
+                  icon: const Icon(Icons.folder_open),
+                ),
+              ],
+            )
+          else
+            const Expanded(child: SizedBox.shrink()),
+        ],
+      ),
+    );
+  }
+
+  String _encodeBody(RequestParams params) => jsonEncode({
+        '__boltBody': 1,
+        'mode': params.bodyMode.name,
+        'text': params.body,
+        'fields': [
+          for (final field in params.formFields)
+            {
+              'key': field.key,
+              'value': field.value,
+              'isFile': field.isFile,
+              'isEnabled': field.isEnabled,
+            },
+        ],
+      });
 
   Widget _buildStatusBadge(int code) {
     Color color = AppColors.accent;
@@ -1024,10 +1212,79 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   void _loadRequest(RequestEntity request) {
+    _activeRequestId = request.id;
+    _activeRequestName = request.name;
     _urlController.text = request.url;
-    _bodyText = request.body ?? '';
-    ref.read(httpClientProvider.notifier).updateUrl(request.url);
-    ref.read(httpClientProvider.notifier).updateBody(request.body ?? '');
+    final notifier = ref.read(httpClientProvider.notifier);
+    notifier.updateUrl(request.url);
+
+    BodyMode bodyMode = BodyMode.json;
+    String? bodyText = request.body;
+    List<FormFieldItem> formFields = [];
+    if (request.body != null) {
+      try {
+        final decoded = jsonDecode(request.body!);
+        if (decoded is Map && decoded['__boltBody'] == 1) {
+          bodyMode = BodyMode.values.firstWhere(
+            (mode) => mode.name == decoded['mode'],
+            orElse: () => BodyMode.json,
+          );
+          bodyText = decoded['text'] as String?;
+          final fields = decoded['fields'];
+          if (fields is List) {
+            formFields = fields.whereType<Map>().map((field) {
+              return FormFieldItem(
+                key: field['key']?.toString() ?? '',
+                value: field['value']?.toString() ?? '',
+                isFile: field['isFile'] == true,
+                isEnabled: field['isEnabled'] != false,
+              );
+            }).toList();
+          }
+        }
+      } on FormatException {
+        // Plain text from older saved requests remains a JSON editor body.
+      }
+    }
+    _bodyText = bodyText ?? '';
+    notifier.updateBody(_bodyText);
+    notifier.updateBodyMode(bodyMode);
+    notifier.updateFormFields(formFields);
+
+    List<T> decodeItems<T>(
+      String source,
+      T Function(Map<String, dynamic>) create,
+    ) {
+      try {
+        final decoded = jsonDecode(source);
+        if (decoded is List) {
+          return decoded
+              .whereType<Map>()
+              .map((item) => create(Map<String, dynamic>.from(item)))
+              .toList();
+        }
+      } on FormatException {
+        return [];
+      }
+      return [];
+    }
+
+    notifier.updateHeaders(decodeItems(
+      request.headersJson,
+      (item) => HeaderItem(
+        key: item['key']?.toString() ?? '',
+        value: item['value']?.toString() ?? '',
+        isEnabled: item['isEnabled'] != false,
+      ),
+    ));
+    notifier.updateQueryParams(decodeItems(
+      request.queryParamsJson,
+      (item) => QueryParamItem(
+        key: item['key']?.toString() ?? '',
+        value: item['value']?.toString() ?? '',
+        isEnabled: item['isEnabled'] != false,
+      ),
+    ));
 
     final method = HttpMethod.values.firstWhere(
       (m) => m.name.toUpperCase() == request.method.toUpperCase(),

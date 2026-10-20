@@ -23,6 +23,7 @@ dependencies:
   # Utilitários de UI para Desktop (Divisores/Split views)
   two_dimensional_scrollables: ^0.3.5
   path_provider: ^2.1.6
+  file_selector: 1.0.3
 
   # Code Editor com syntax highlighting
   re_editor: ^0.10.0

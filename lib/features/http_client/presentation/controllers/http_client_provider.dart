@@ -17,16 +17,18 @@ class HttpClientState {
   final RequestParams params;
   final ResponseResult? response;
   final bool isLoading;
-  final List<EnvironmentVariable> variables; 
+  final List<EnvironmentVariable> variables;
 
   HttpClientState({
     required this.params,
     this.response,
     this.isLoading = false,
     List<EnvironmentVariable>? variables,
-  }) : variables = variables ?? [
-          EnvironmentVariable(key: 'baseUrl', value: 'https://jsonplaceholder.typicode.com')
-        ]; // Valor padrão de exemplo
+  }) : variables = variables ??
+            [
+              EnvironmentVariable(
+                  key: 'baseUrl', value: 'https://jsonplaceholder.typicode.com')
+            ]; // Valor padrão de exemplo
 
   HttpClientState copyWith({
     RequestParams? params,
@@ -66,9 +68,64 @@ class HttpClientNotifier extends StateNotifier<HttpClientState> {
     state = state.copyWith(params: state.params.copyWith(body: body));
   }
 
+  void updateBodyMode(BodyMode mode) {
+    state = state.copyWith(params: state.params.copyWith(bodyMode: mode));
+  }
+
+  void addFormField({bool isFile = false}) {
+    final fields = List<FormFieldItem>.from(state.params.formFields)
+      ..add(FormFieldItem(key: '', value: '', isFile: isFile));
+    state = state.copyWith(params: state.params.copyWith(formFields: fields));
+  }
+
+  void updateFormField(
+    int index, {
+    String? key,
+    String? value,
+    bool? isFile,
+    bool? isEnabled,
+  }) {
+    final fields = List<FormFieldItem>.from(state.params.formFields);
+    final field = fields[index];
+    fields[index] = FormFieldItem(
+      key: key ?? field.key,
+      value: value ?? field.value,
+      isFile: isFile ?? field.isFile,
+      isEnabled: isEnabled ?? field.isEnabled,
+    );
+    state = state.copyWith(params: state.params.copyWith(formFields: fields));
+  }
+
+  void removeFormField(int index) {
+    final fields = List<FormFieldItem>.from(state.params.formFields)
+      ..removeAt(index);
+    state = state.copyWith(params: state.params.copyWith(formFields: fields));
+  }
+
+  void updateFormFields(List<FormFieldItem> fields) {
+    state = state.copyWith(params: state.params.copyWith(formFields: fields));
+  }
+
+  void updateHeaders(List<HeaderItem> headers) {
+    state = state.copyWith(params: state.params.copyWith(headers: headers));
+  }
+
+  void updateQueryParams(List<QueryParamItem> queryParams) {
+    state = state.copyWith(
+      params: state.params.copyWith(queryParams: queryParams),
+    );
+  }
+
   void addHeader() {
     final updatedHeaders = List<HeaderItem>.from(state.params.headers)
       ..add(HeaderItem(key: '', value: ''));
+    state =
+        state.copyWith(params: state.params.copyWith(headers: updatedHeaders));
+  }
+
+  void addHeaderPreset({required String key, required String value}) {
+    final updatedHeaders = List<HeaderItem>.from(state.params.headers)
+      ..add(HeaderItem(key: key, value: value));
     state =
         state.copyWith(params: state.params.copyWith(headers: updatedHeaders));
   }
@@ -117,7 +174,8 @@ class HttpClientNotifier extends StateNotifier<HttpClientState> {
   }
 
   // Gerenciamento de variáveis
-  void updateVariable(int index, {String? key, String? value, bool? isEnabled}) {
+  void updateVariable(int index,
+      {String? key, String? value, bool? isEnabled}) {
     final updated = List<EnvironmentVariable>.from(state.variables);
     final item = updated[index];
     updated[index] = EnvironmentVariable(
@@ -135,7 +193,8 @@ class HttpClientNotifier extends StateNotifier<HttpClientState> {
   }
 
   void removeVariable(int index) {
-    final updated = List<EnvironmentVariable>.from(state.variables)..removeAt(index);
+    final updated = List<EnvironmentVariable>.from(state.variables)
+      ..removeAt(index);
     state = state.copyWith(variables: updated);
   }
 
@@ -153,11 +212,29 @@ class HttpClientNotifier extends StateNotifier<HttpClientState> {
     state = state.copyWith(isLoading: true, response: null);
 
     final interpolatedUrl = _interpolate(state.params.url);
-    final interpolatedBody = state.params.body != null ? _interpolate(state.params.body!) : null;
+    final interpolatedBody =
+        state.params.body != null ? _interpolate(state.params.body!) : null;
 
     final interpolatedParams = state.params.copyWith(
       url: interpolatedUrl,
       body: interpolatedBody,
+      headers: [
+        for (final header in state.params.headers)
+          HeaderItem(
+            key: _interpolate(header.key),
+            value: _interpolate(header.value),
+            isEnabled: header.isEnabled,
+          ),
+      ],
+      formFields: [
+        for (final field in state.params.formFields)
+          FormFieldItem(
+            key: _interpolate(field.key),
+            value: field.isFile ? field.value : _interpolate(field.value),
+            isFile: field.isFile,
+            isEnabled: field.isEnabled,
+          ),
+      ],
     );
 
     final result = await _remoteDataSource.sendRequest(interpolatedParams);

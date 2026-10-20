@@ -29,7 +29,8 @@ class WorkspaceService {
     });
   }
 
-  static Future<List<RequestEntity>> getRequestsByWorkspace(int workspaceId) async {
+  static Future<List<RequestEntity>> getRequestsByWorkspace(
+      int workspaceId) async {
     return await IsarService.isar.requestEntitys
         .filter()
         .workspaceIdEqualTo(workspaceId)
@@ -53,6 +54,37 @@ class WorkspaceService {
       ..queryParamsJson = queryParamsJson
       ..body = body
       ..workspaceId = workspaceId;
+
+    await IsarService.isar.writeTxn(() async {
+      await IsarService.isar.requestEntitys.put(request);
+    });
+    return request;
+  }
+
+  static Future<RequestEntity> saveRequest({
+    int? id,
+    required String name,
+    required String url,
+    required String method,
+    required String headersJson,
+    required String queryParamsJson,
+    String? body,
+    required int workspaceId,
+  }) async {
+    final request = id == null
+        ? RequestEntity()
+        : await IsarService.isar.requestEntitys.get(id) ?? RequestEntity();
+    final isNew = request.id == Isar.autoIncrement;
+
+    request
+      ..name = name
+      ..url = url
+      ..method = method
+      ..headersJson = headersJson
+      ..queryParamsJson = queryParamsJson
+      ..body = body
+      ..workspaceId = isNew ? workspaceId : request.workspaceId
+      ..updatedAt = DateTime.now();
 
     await IsarService.isar.writeTxn(() async {
       await IsarService.isar.requestEntitys.put(request);
