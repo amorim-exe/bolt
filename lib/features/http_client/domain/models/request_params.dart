@@ -1,4 +1,3 @@
-// lib/features/http_client/domain/models/request_params.dart
 enum HttpMethod { get, post, put, patch, delete, head, options, trace, connect }
 
 enum BodyMode { none, json, text, formUrlEncoded, formData, binary }

@@ -260,18 +260,41 @@ class _HomePageState extends ConsumerState<HomePage>
                                               ),
                                             ],
                                           ),
-                                          title: Text(workspace.name,
-                                              style: const TextStyle(
-                                                  fontSize: 14)),
-                                          trailing: IconButton(
-                                            icon: const Icon(
-                                                Icons.delete_outline,
-                                                size: 16),
-                                            onPressed: () =>
-                                                _showDeleteWorkspaceDialog(
-                                                    context, workspace.id),
-                                            tooltip: 'Deletar Workspace',
-                                            padding: const EdgeInsets.all(4),
+                                          title: Text(
+                                            workspace.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style:
+                                                const TextStyle(fontSize: 14),
+                                          ),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.edit,
+                                                    size: 16),
+                                                onPressed: () =>
+                                                    _showRenameWorkspaceDialog(
+                                                  context,
+                                                  workspace.id,
+                                                  workspace.name,
+                                                ),
+                                                tooltip: 'Renomear Workspace',
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                    Icons.delete_outline,
+                                                    size: 16),
+                                                onPressed: () =>
+                                                    _showDeleteWorkspaceDialog(
+                                                        context, workspace.id),
+                                                tooltip: 'Deletar Workspace',
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                              ),
+                                            ],
                                           ),
                                           dense: true,
                                           onTap: () {
@@ -304,21 +327,51 @@ class _HomePageState extends ConsumerState<HomePage>
                                                       _getMethodColorFromString(
                                                           request.method),
                                                 ),
-                                                title: Text(request.name,
-                                                    style: const TextStyle(
-                                                        fontSize: 13)),
-                                                trailing: IconButton(
-                                                  icon: const Icon(
-                                                      Icons.delete_outline,
-                                                      size: 14),
-                                                  onPressed: () => ref
-                                                      .read(workspaceProvider
-                                                          .notifier)
-                                                      .deleteRequest(
-                                                          request.id),
-                                                  tooltip: 'Deletar Request',
-                                                  padding:
-                                                      const EdgeInsets.all(4),
+                                                title: Text(
+                                                  request.name,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                      fontSize: 13),
+                                                ),
+                                                trailing: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                          Icons.edit,
+                                                          size: 14),
+                                                      onPressed: () =>
+                                                          _showRenameRequestDialog(
+                                                        context,
+                                                        request.id,
+                                                        request.name,
+                                                      ),
+                                                      tooltip:
+                                                          'Renomear Request',
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              4),
+                                                    ),
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                          Icons.delete_outline,
+                                                          size: 14),
+                                                      onPressed: () => ref
+                                                          .read(
+                                                              workspaceProvider
+                                                                  .notifier)
+                                                          .deleteRequest(
+                                                              request.id),
+                                                      tooltip:
+                                                          'Deletar Request',
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              4),
+                                                    ),
+                                                  ],
                                                 ),
                                                 dense: true,
                                                 onTap: () =>
@@ -1085,6 +1138,56 @@ class _HomePageState extends ConsumerState<HomePage>
     );
   }
 
+  void _showRenameWorkspaceDialog(
+    BuildContext context,
+    int workspaceId,
+    String currentName,
+  ) {
+    final controller = TextEditingController(text: currentName);
+    final formKey = GlobalKey<FormState>();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Renomear Workspace'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            decoration: const InputDecoration(labelText: 'Nome do workspace'),
+            autofocus: true,
+            validator: (value) =>
+                value?.trim().isNotEmpty == true ? null : 'Informe um nome',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              try {
+                await ref
+                    .read(workspaceProvider.notifier)
+                    .renameWorkspace(workspaceId, controller.text.trim());
+                if (context.mounted) Navigator.pop(context);
+              } catch (error) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Falha ao renomear workspace: $error'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    ).whenComplete(controller.dispose);
+  }
+
   void _showDeleteWorkspaceDialog(BuildContext context, int workspaceId) {
     showDialog(
       context: context,
@@ -1209,6 +1312,60 @@ class _HomePageState extends ConsumerState<HomePage>
         ),
       ),
     );
+  }
+
+  void _showRenameRequestDialog(
+    BuildContext context,
+    int requestId,
+    String currentName,
+  ) {
+    final controller = TextEditingController(text: currentName);
+    final formKey = GlobalKey<FormState>();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Renomear Request'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            decoration: const InputDecoration(labelText: 'Nome do request'),
+            autofocus: true,
+            validator: (value) =>
+                value?.trim().isNotEmpty == true ? null : 'Informe um nome',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final name = controller.text.trim();
+              try {
+                await ref
+                    .read(workspaceProvider.notifier)
+                    .renameRequest(requestId, name);
+                if (_activeRequestId == requestId && mounted) {
+                  setState(() => _activeRequestName = name);
+                }
+                if (context.mounted) Navigator.pop(context);
+              } catch (error) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Falha ao renomear request: $error'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    ).whenComplete(controller.dispose);
   }
 
   void _loadRequest(RequestEntity request) {

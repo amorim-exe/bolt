@@ -16,6 +16,21 @@ class WorkspaceService {
     return workspace;
   }
 
+  static Future<WorkspaceEntity> renameWorkspace(int id, String name) async {
+    final workspace = await IsarService.isar.workspaceEntitys.get(id);
+    if (workspace == null) {
+      throw StateError('Workspace $id not found');
+    }
+
+    workspace
+      ..name = name
+      ..updatedAt = DateTime.now();
+    await IsarService.isar.writeTxn(() async {
+      await IsarService.isar.workspaceEntitys.put(workspace);
+    });
+    return workspace;
+  }
+
   static Future<void> deleteWorkspace(int id) async {
     await IsarService.isar.writeTxn(() async {
       final requests = await IsarService.isar.requestEntitys
@@ -96,6 +111,21 @@ class WorkspaceService {
     await IsarService.isar.writeTxn(() async {
       await IsarService.isar.requestEntitys.delete(id);
     });
+  }
+
+  static Future<RequestEntity> renameRequest(int id, String name) async {
+    final request = await IsarService.isar.requestEntitys.get(id);
+    if (request == null) {
+      throw StateError('Request $id not found');
+    }
+
+    request
+      ..name = name
+      ..updatedAt = DateTime.now();
+    await IsarService.isar.writeTxn(() async {
+      await IsarService.isar.requestEntitys.put(request);
+    });
+    return request;
   }
 
   static Future<void> updateRequest(RequestEntity request) async {

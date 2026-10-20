@@ -63,6 +63,18 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     await loadWorkspaces();
   }
 
+  Future<void> renameWorkspace(int id, String name) async {
+    final workspace = await WorkspaceService.renameWorkspace(id, name);
+    final workspaces = state.workspaces
+        .map((item) => item.id == id ? workspace : item)
+        .toList();
+    state = state.copyWith(
+      workspaces: workspaces,
+      selectedWorkspace:
+          state.selectedWorkspace?.id == id ? workspace : null,
+    );
+  }
+
   Future<void> deleteWorkspace(int id) async {
     await WorkspaceService.deleteWorkspace(id);
     if (state.selectedWorkspace?.id == id) {
@@ -152,6 +164,25 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     if (state.selectedWorkspace != null) {
       await selectWorkspace(state.selectedWorkspace!.id);
     }
+  }
+
+  Future<void> renameRequest(int id, String name) async {
+    final request = await WorkspaceService.renameRequest(id, name);
+    final requests = state.requests
+        .map((item) => item.id == id ? request : item)
+        .toList();
+    final workspaceRequests =
+        Map<int, List<RequestEntity>>.from(state.workspaceRequests);
+    final cachedRequests = workspaceRequests[request.workspaceId];
+    if (cachedRequests != null) {
+      workspaceRequests[request.workspaceId] = cachedRequests
+          .map((item) => item.id == id ? request : item)
+          .toList();
+    }
+    state = state.copyWith(
+      requests: requests,
+      workspaceRequests: workspaceRequests,
+    );
   }
 
   Future<void> toggleWorkspaceExpanded(int workspaceId) async {
