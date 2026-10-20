@@ -1,4 +1,3 @@
-// lib/features/home/presentation/pages/home_page.dart
 import 'dart:convert';
 import 'package:bolt/core/theme/theme_provider.dart';
 import 'package:bolt/features/environment/presentation/environment_dialog.dart';
@@ -8,6 +7,7 @@ import 'package:bolt/features/http_client/presentation/widgets/params_editor_vie
 import 'package:bolt/features/workspace/data/models/request_entity.dart';
 import 'package:bolt/features/workspace/presentation/workspace_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../http_client/domain/models/request_params.dart';
@@ -43,6 +43,76 @@ class _HomePageState extends ConsumerState<HomePage>
     _requestTabController.dispose();
     _responseTabController.dispose();
     super.dispose();
+  }
+
+  Widget _responseToolbar({
+    required bool isDark,
+    required Color borderColor,
+    required String label,
+    required IconData icon,
+    required VoidCallback? onCopy,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF20242B)
+            : const Color(0xFFF0F2F5),
+        border: Border(
+          bottom: BorderSide(color: borderColor),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: isDark
+                ? Colors.lightBlueAccent
+                : Colors.blueGrey,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark
+                  ? Colors.white70
+                  : Colors.blueGrey.shade700,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Copiar $label',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.copy, size: 16),
+            onPressed: onCopy,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _copyResponseText(
+    String text,
+    String message,
+  ) async {
+    await Clipboard.setData(ClipboardData(text: text));
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 1),
+        ),
+      );
   }
 
   @override
@@ -482,6 +552,7 @@ class _HomePageState extends ConsumerState<HomePage>
                   ),
                   const SizedBox(height: 20),
 
+                 
                   // Área de Resposta
                   Expanded(
                     flex: 1,
@@ -491,38 +562,50 @@ class _HomePageState extends ConsumerState<HomePage>
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: borderColor),
                       ),
+                      clipBehavior: Clip.antiAlias,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
+                          // Cabeçalho
+                          Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                  bottom: BorderSide(color: borderColor)),
+                              horizontal: 16,
+                              vertical: 8,
                             ),
                             child: Row(
                               children: [
-                                const Text('Response',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                const Icon(Icons.http, size: 18),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Response',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                                 const Spacer(),
                                 if (state.response != null) ...[
-                                  _buildStatusBadge(state.response!.statusCode),
-                                  const SizedBox(width: 16),
+                                  _buildStatusBadge(
+                                    state.response!.statusCode,
+                                  ),
+                                  const SizedBox(width: 12),
                                   _buildMetricBadge(
-                                      Icons.timer_outlined,
-                                      '${state.response!.responseTimeMs} ms',
-                                      isDark),
-                                  const SizedBox(width: 16),
+                                    Icons.timer_outlined,
+                                    '${state.response!.responseTimeMs} ms',
+                                    isDark,
+                                  ),
+                                  const SizedBox(width: 12),
                                   _buildMetricBadge(
-                                      Icons.data_usage,
-                                      '${state.response!.responseSizeBytes} bytes',
-                                      isDark),
+                                    Icons.data_usage,
+                                    '${state.response!.responseSizeBytes} bytes',
+                                    isDark,
+                                  ),
                                 ],
                               ],
                             ),
                           ),
+                          Divider(height: 1, color: borderColor),
+
+                          // Abas
                           TabBar(
                             controller: _responseTabController,
                             tabs: const [
@@ -537,37 +620,186 @@ class _HomePageState extends ConsumerState<HomePage>
                             indicatorSize: TabBarIndicatorSize.label,
                           ),
                           Divider(height: 1, color: borderColor),
+
                           Expanded(
                             child: TabBarView(
                               controller: _responseTabController,
                               children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: SingleChildScrollView(
-                                    child: SelectableText(
-                                      state.response != null
-                                          ? const JsonEncoder.withIndent('  ')
-                                              .convert(state.response!.data)
-                                          : 'Clique em "Send" para executar a requisição...',
-                                      style: const TextStyle(
-                                          fontFamily: 'monospace',
-                                          fontSize: 15),
-                                    ),
-                                  ),
+                                // BODY
+                                Builder(
+                                  builder: (context) {
+                                    final responseText =
+                                        state.response == null
+                                            ? ''
+                                            : const JsonEncoder.withIndent('  ')
+                                                .convert(
+                                                    state.response!.data);
+
+                                    return Column(
+                                      children: [
+                                        _responseToolbar(
+                                          isDark: isDark,
+                                          borderColor: borderColor,
+                                          label: 'JSON',
+                                          icon: Icons.data_object,
+                                          onCopy: state.response == null
+                                              ? null
+                                              : () => _copyResponseText(
+                                                    responseText,
+                                                    'Resposta copiada!',
+                                                  ),
+                                        ),
+                                        Expanded(
+                                          child: Container(
+                                            width: double.infinity,
+                                            color: isDark
+                                                ? const Color(0xFF171A21)
+                                                : const Color(0xFFFAFAFC),
+                                            child: state.response == null
+                                                ? Center(
+                                                    child: Text(
+                                                      'Execute uma requisição para ver a resposta.',
+                                                      style: TextStyle(
+                                                        color: isDark
+                                                            ? Colors.white54
+                                                            : Colors.black54,
+                                                      ),
+                                                    ),
+                                                  )
+                                                : SingleChildScrollView(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            16),
+                                                    child: SelectableText(
+                                                      responseText,
+                                                      style: TextStyle(
+                                                        fontFamily: 'monospace',
+                                                        fontSize: 13,
+                                                        height: 1.6,
+                                                        color: isDark
+                                                            ? const Color(
+                                                                0xFFD6DEEB)
+                                                            : const Color(
+                                                                0xFF273142),
+                                                      ),
+                                                    ),
+                                                  ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: ListView(
-                                    children: state.response?.headers.entries
-                                            .map((entry) {
-                                          return Text(
-                                              '${entry.key}: ${entry.value.join(", ")}',
-                                              style: const TextStyle(
-                                                  fontFamily: 'monospace',
-                                                  fontSize: 14));
-                                        }).toList() ??
-                                        const [Text('Nenhum header recebido.')],
-                                  ),
+
+                                // HEADERS
+                                Builder(
+                                  builder: (context) {
+                                    final headersText = state
+                                            .response?.headers.entries
+                                            .map(
+                                              (entry) =>
+                                                  '${entry.key}: ${entry.value.join(", ")}',
+                                            )
+                                            .join('\n') ??
+                                        '';
+
+                                    return Column(
+                                      children: [
+                                        _responseToolbar(
+                                          isDark: isDark,
+                                          borderColor: borderColor,
+                                          label: 'Response Headers',
+                                          icon: Icons.list_alt,
+                                          onCopy: state.response == null
+                                              ? null
+                                              : () => _copyResponseText(
+                                                    headersText,
+                                                    'Headers copiados!',
+                                                  ),
+                                        ),
+                                        Expanded(
+                                          child: Container(
+                                            width: double.infinity,
+                                            color: isDark
+                                                ? const Color(0xFF171A21)
+                                                : const Color(0xFFFAFAFC),
+                                            child: state.response == null
+                                                ? Center(
+                                                    child: Text(
+                                                      'Nenhum header recebido.',
+                                                      style: TextStyle(
+                                                        color: isDark
+                                                            ? Colors.white54
+                                                            : Colors.black54,
+                                                      ),
+                                                    ),
+                                                  )
+                                                : ListView(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            16),
+                                                    children: state.response!
+                                                        .headers.entries
+                                                        .map(
+                                                          (entry) => Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                              bottom: 10,
+                                                            ),
+                                                            child:
+                                                                SelectableText
+                                                                    .rich(
+                                                              TextSpan(
+                                                                children: [
+                                                                  TextSpan(
+                                                                    text:
+                                                                        '${entry.key}: ',
+                                                                    style:
+                                                                        TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      color: isDark
+                                                                          ? Colors
+                                                                              .lightBlueAccent
+                                                                          : Colors
+                                                                              .blue
+                                                                              .shade800,
+                                                                    ),
+                                                                  ),
+                                                                  TextSpan(
+                                                                    text: entry
+                                                                        .value
+                                                                        .join(
+                                                                            ', '),
+                                                                    style:
+                                                                        TextStyle(
+                                                                      color: isDark
+                                                                          ? const Color(
+                                                                              0xFFD6DEEB)
+                                                                          : const Color(
+                                                                              0xFF273142),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontFamily:
+                                                                    'monospace',
+                                                                fontSize: 12,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        )
+                                                        .toList(),
+                                                  ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
                               ],
                             ),
@@ -576,9 +808,10 @@ class _HomePageState extends ConsumerState<HomePage>
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
+
+        ],
+      ),
+    ),
           ),
         ],
       ),
