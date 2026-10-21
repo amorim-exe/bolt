@@ -1,0 +1,67 @@
+name: Build desktop release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Build Linux package
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev dpkg-dev
+      - name: Build Debian package
+        run: python3 tools/package_linux_deb.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bolt-linux-deb
+          path: dist/*.deb
+
+  windows:
+    name: Build Windows bundle
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Build Windows release
+        run: flutter build windows --release
+      - name: Package Windows executable bundle
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path 'build/windows/x64/runner/Release/*' -DestinationPath 'dist/bolt-windows-x64.zip' -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bolt-windows-x64
+          path: dist/bolt-windows-x64.zip
+
+  publish:
+    name: Attach files to GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [linux, windows]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bolt-*
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*

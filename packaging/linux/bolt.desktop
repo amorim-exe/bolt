@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Bolt API Client
+Comment=Modern desktop client for REST APIs
+Exec=/usr/lib/bolt/bolt
+Icon=bolt
+Terminal=false
+Type=Application
+Categories=Development;Network;
+StartupNotify=true
