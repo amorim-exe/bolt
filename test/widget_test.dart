@@ -2,6 +2,7 @@ import 'package:bolt/features/history/data/datasources/request_history_datasourc
 import 'package:bolt/features/history/data/models/request_history_entity.dart';
 import 'package:bolt/features/history/presentation/history_provider.dart';
 import 'package:bolt/core/settings/app_settings.dart';
+import 'package:bolt/features/http_client/presentation/controllers/http_client_provider.dart';
 import 'package:bolt/features/http_client/presentation/controllers/request_tabs_provider.dart';
 import 'package:bolt/main.dart';
 import 'package:flutter/material.dart';
@@ -50,12 +51,33 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Collections'), findsNWidgets(2));
+    expect(find.text('Collections'), findsOneWidget);
     expect(find.text('Histórico'), findsOneWidget);
     expect(find.text('Resposta'), findsOneWidget);
     expect(find.text('Parâmetros'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Nova aba'));
+    await tester.enterText(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.hintText == 'Cole uma URL ou use {{variáveis}}',
+      ),
+      'https://api.open5e.com/v2/search/?query=goblin&page=2',
+    );
+    await tester.pumpAndSettle();
+    expect(container.read(httpClientProvider).params.queryParams, hasLength(2));
+    expect(
+      container
+          .read(httpClientProvider)
+          .params
+          .queryParams
+          .map((param) => '${param.key}=${param.value}'),
+      containsAll(['query=goblin', 'page=2']),
+    );
+    expect(find.text('query'), findsOneWidget);
+    expect(find.text('goblin'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Nova aba de request'));
     await tester.pumpAndSettle();
     expect(container.read(requestTabsProvider).tabs, hasLength(2));
 
@@ -79,16 +101,22 @@ void main() {
 
     await tester.tap(find.text('Tests').first);
     await tester.pumpAndSettle();
-    expect(find.text('Asserções após a resposta'), findsOneWidget);
+    expect(find.text('Asserções da resposta'), findsOneWidget);
 
     await tester.tap(find.text('Tests').last);
     await tester.pumpAndSettle();
     expect(
       find.text(
-        'Sem testes executados. Adicione asserções na aba Tests e envie a requisição.',
+        'Ainda não há dados de resposta',
       ),
       findsOneWidget,
     );
+
+    await tester.tap(find.byTooltip('Nova collection'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
 
     await tester.tap(find.byTooltip('Configurações'));
     await tester.pumpAndSettle();

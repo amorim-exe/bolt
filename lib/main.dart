@@ -6,7 +6,7 @@ import 'core/storage/isar_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/settings/app_settings.dart';
 import 'core/localization/app_localizations.dart';
-import 'features/home/presentation/pages/home_page.dart';
+import 'features/home/presentation/pages/home_studio_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,7 +59,7 @@ class BoltApp extends ConsumerWidget {
         ),
         child: child ?? const SizedBox.shrink(),
       ),
-      home: const HomePage(),
+      home: const HomeStudioPage(),
     );
   }
 }
