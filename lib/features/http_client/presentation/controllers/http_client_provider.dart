@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:bolt/features/environment/domain/environment_comparison_result.dart';
 import 'package:bolt/features/environment/domain/environment_model.dart';
 import 'package:bolt/features/history/data/models/request_history_entity.dart';
 import 'package:bolt/features/history/presentation/history_provider.dart';
@@ -353,14 +354,104 @@ class HttpClientNotifier extends StateNotifier<HttpClientState> {
     _commit(state.copyWith(variables: updated));
   }
 
-  String _interpolate(String text) {
+  String _interpolateWithVariables(
+    String text,
+    List<EnvironmentVariable> variables,
+  ) {
     var result = text;
-    for (var v in state.variables) {
+    for (final v in variables) {
       if (v.isEnabled && v.key.trim().isNotEmpty) {
         result = result.replaceAll('{{${v.key.trim()}}}', v.value.trim());
       }
     }
     return result;
+  }
+
+  String _interpolate(String text) =>
+      _interpolateWithVariables(text, state.variables);
+
+  RequestParams _prepareRequest(
+    RequestParams params,
+    List<EnvironmentVariable> variables,
+  ) {
+    final interpolatedParams = params.copyWith(
+      url: _interpolateWithVariables(params.url, variables),
+      body: params.body == null
+          ? null
+          : _interpolateWithVariables(params.body!, variables),
+      auth: RequestAuth(
+        type: params.auth.type,
+        token: _interpolateWithVariables(params.auth.token, variables),
+        username: _interpolateWithVariables(params.auth.username, variables),
+        password: _interpolateWithVariables(params.auth.password, variables),
+        apiKeyName: _interpolateWithVariables(params.auth.apiKeyName, variables),
+        apiKeyValue:
+            _interpolateWithVariables(params.auth.apiKeyValue, variables),
+        apiKeyLocation: params.auth.apiKeyLocation,
+      ),
+      headers: [
+        for (final header in params.headers)
+          HeaderItem(
+            key: _interpolateWithVariables(header.key, variables),
+            value: _interpolateWithVariables(header.value, variables),
+            isEnabled: header.isEnabled,
+          ),
+      ],
+      queryParams: [
+        for (final param in params.queryParams)
+          QueryParamItem(
+            key: _interpolateWithVariables(param.key, variables),
+            value: _interpolateWithVariables(param.value, variables),
+            isEnabled: param.isEnabled,
+            isAutoDetected: param.isAutoDetected,
+          ),
+      ],
+      formFields: [
+        for (final field in params.formFields)
+          FormFieldItem(
+            key: _interpolateWithVariables(field.key, variables),
+            value: field.isFile
+                ? field.value
+                : _interpolateWithVariables(field.value, variables),
+            isFile: field.isFile,
+            isEnabled: field.isEnabled,
+          ),
+      ],
+    );
+
+    final headers = List<HeaderItem>.from(interpolatedParams.headers);
+    final queryParams =
+        List<QueryParamItem>.from(interpolatedParams.queryParams);
+    final auth = interpolatedParams.auth;
+    if (auth.type == AuthType.bearer || auth.type == AuthType.basic) {
+      headers.removeWhere(
+          (header) => header.key.trim().toLowerCase() == 'authorization');
+      final credential = auth.type == AuthType.bearer
+          ? 'Bearer ${auth.token}'
+          : 'Basic ${base64Encode(utf8.encode('${auth.username}:${auth.password}'))}';
+      headers.add(HeaderItem(key: 'Authorization', value: credential));
+    } else if (auth.type == AuthType.apiKey && auth.apiKeyName.isNotEmpty) {
+      if (auth.apiKeyLocation == ApiKeyLocation.header) {
+        headers.removeWhere((header) =>
+            header.key.trim().toLowerCase() ==
+            auth.apiKeyName.trim().toLowerCase());
+        headers.add(
+          HeaderItem(key: auth.apiKeyName, value: auth.apiKeyValue),
+        );
+      } else {
+        queryParams
+            .removeWhere((param) => param.key.trim() == auth.apiKeyName.trim());
+        queryParams.add(
+          QueryParamItem(key: auth.apiKeyName, value: auth.apiKeyValue),
+        );
+      }
+    }
+
+    return interpolatedParams.copyWith(
+      url: _removeUrlQuery(interpolatedParams.url),
+      headers: headers,
+      queryParams: queryParams,
+    );
   }
 
   Future<void> sendRequest() async {
@@ -391,6 +482,15 @@ class HttpClientNotifier extends StateNotifier<HttpClientState> {
             key: _interpolate(header.key),
             value: _interpolate(header.value),
             isEnabled: header.isEnabled,
+          ),
+      ],
+      queryParams: [
+        for (final param in requestState.params.queryParams)
+          QueryParamItem(
+            key: _interpolate(param.key),
+            value: _interpolate(param.value),
+            isEnabled: param.isEnabled,
+            isAutoDetected: param.isAutoDetected,
           ),
       ],
       formFields: [
@@ -483,6 +583,26 @@ class HttpClientNotifier extends StateNotifier<HttpClientState> {
         ..statusCode = result.statusCode
         ..timestamp = DateTime.now(),
     );
+  }
+
+  Future<List<EnvironmentComparisonResult>> compareEnvironments(
+    List<EnvironmentProfile> profiles,
+  ) async {
+    final params = state.params;
+    final results = <EnvironmentComparisonResult>[];
+    for (final profile in profiles) {
+      final request = _prepareRequest(params, profile.variables);
+      final response = await _remoteDataSource.sendRequest(request);
+      results.add(
+        EnvironmentComparisonResult(
+          environmentName: profile.name,
+          response: response.copyWith(
+            testResults: ResponseTestRunner.run(params.testScript, response),
+          ),
+        ),
+      );
+    }
+    return results;
   }
 
   String _removeUrlQuery(String url) {

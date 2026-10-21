@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../features/environment/domain/environment_model.dart';
+
 class AppSettings {
   const AppSettings({
     this.themeMode = ThemeMode.dark,
@@ -14,6 +16,7 @@ class AppSettings {
     this.verifySslCertificates = true,
     this.compactDensity = false,
     this.textScale = 1,
+    this.environmentProfiles = const [],
   });
 
   final ThemeMode themeMode;
@@ -23,6 +26,7 @@ class AppSettings {
   final bool verifySslCertificates;
   final bool compactDensity;
   final double textScale;
+  final List<EnvironmentProfile> environmentProfiles;
 
   AppSettings copyWith({
     ThemeMode? themeMode,
@@ -32,6 +36,7 @@ class AppSettings {
     bool? verifySslCertificates,
     bool? compactDensity,
     double? textScale,
+    List<EnvironmentProfile>? environmentProfiles,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -42,6 +47,7 @@ class AppSettings {
           verifySslCertificates ?? this.verifySslCertificates,
       compactDensity: compactDensity ?? this.compactDensity,
       textScale: textScale ?? this.textScale,
+      environmentProfiles: environmentProfiles ?? this.environmentProfiles,
     );
   }
 
@@ -53,11 +59,14 @@ class AppSettings {
         'verifySslCertificates': verifySslCertificates,
         'compactDensity': compactDensity,
         'textScale': textScale,
+        'environmentProfiles':
+            environmentProfiles.map((profile) => profile.toJson()).toList(),
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     final timeout = json['timeoutSeconds'];
     final scale = json['textScale'];
+    final rawProfiles = json['environmentProfiles'];
     return AppSettings(
       themeMode: ThemeMode.values.firstWhere(
         (mode) => mode.name == json['themeMode'],
@@ -77,6 +86,15 @@ class AppSettings {
       textScale: scale is num && scale >= 0.8 && scale <= 1.4
           ? scale.toDouble()
           : 1,
+      environmentProfiles: rawProfiles is List
+          ? rawProfiles
+              .whereType<Map>()
+              .map((item) => EnvironmentProfile.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ))
+              .where((profile) => profile.id.isNotEmpty)
+              .toList()
+          : const [],
     );
   }
 }

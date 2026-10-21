@@ -55,6 +55,22 @@ void main() {
     expect(find.text('Histórico'), findsOneWidget);
     expect(find.text('Resposta'), findsOneWidget);
     expect(find.text('Parâmetros'), findsOneWidget);
+    final initialResponseTop = tester.getCenter(find.text('Resposta')).dy;
+    final resizeHandle = find.byKey(const ValueKey('response-resize-handle'));
+    expect(resizeHandle, findsOneWidget);
+    await tester.drag(resizeHandle, const Offset(0, 90));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getCenter(find.text('Resposta')).dy,
+      greaterThan(initialResponseTop + 30),
+    );
+    expect(tester.takeException(), isNull);
+    await tester.drag(resizeHandle, const Offset(0, -90));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getCenter(find.text('Resposta')).dy,
+      lessThan(initialResponseTop + 30),
+    );
     expect(container.read(appSettingsProvider).settings.languageCode, 'pt_BR');
     await tester.tap(find.byKey(const ValueKey('language-toggle')));
     await tester.pumpAndSettle();
@@ -85,6 +101,17 @@ void main() {
     );
     expect(find.text('query'), findsOneWidget);
     expect(find.text('goblin'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Comparar ambientes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Comparar ambientes'), findsOneWidget);
+    await tester.tap(find.text('Adicionar ambiente'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(settingsStore.settings.environmentProfiles, hasLength(1));
+    await tester.tap(find.byTooltip('Fechar').last);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Nova aba de request'));
     await tester.pumpAndSettle();

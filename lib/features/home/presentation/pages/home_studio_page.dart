@@ -5,6 +5,7 @@ import 'package:bolt/core/constants/app_colors.dart';
 import 'package:bolt/core/localization/app_localizations.dart';
 import 'package:bolt/core/settings/app_settings.dart';
 import 'package:bolt/features/environment/presentation/environment_dialog.dart';
+import 'package:bolt/features/environment/presentation/environment_comparison_dialog.dart';
 import 'package:bolt/features/history/data/models/request_history_entity.dart';
 import 'package:bolt/features/history/presentation/history_provider.dart';
 import 'package:bolt/features/http_client/domain/models/request_params.dart';
@@ -23,6 +24,7 @@ import 'package:bolt/features/workspace/data/models/workspace_entity.dart';
 import 'package:bolt/features/workspace/data/services/collection_transfer_service.dart';
 import 'package:bolt/features/workspace/presentation/workspace_provider.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -167,42 +169,46 @@ class _HomeStudioPageState extends ConsumerState<HomeStudioPage>
                               builder: (_) =>
                                   CodeGenerationDialog(params: http.params),
                             ),
+                            onCompare: () => showDialog<void>(
+                              context: context,
+                              builder: (_) =>
+                                  const EnvironmentComparisonDialog(),
+                            ),
                             onSave: _saveRequest,
                           ),
                           const SizedBox(height: 14),
                           Expanded(
-                            flex: 5,
-                            child: _RequestEditor(
-                              controller: _requestController,
-                              params: http.params,
-                              activeTabId: tabs.activeTabId,
-                              dark: dark,
-                              panelColor: panel,
+                            child: _ResizableResponseSplit(
+                              key: const ValueKey('response-resize-split'),
                               borderColor: border,
-                              mutedColor: muted,
-                              onBodyChanged: ref
-                                  .read(httpClientProvider.notifier)
-                                  .updateBody,
-                              onBodyModeChanged: ref
-                                  .read(httpClientProvider.notifier)
-                                  .updateBodyMode,
-                              onTestsChanged: ref
-                                  .read(httpClientProvider.notifier)
-                                  .updateTestScript,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Expanded(
-                            flex: 4,
-                            child: _ResponseStudio(
-                              controller: _responseController,
-                              response: http.response,
-                              isLoading: http.isLoading,
-                              dark: dark,
-                              panelColor: panel,
-                              borderColor: border,
-                              inkColor: ink,
-                              mutedColor: muted,
+                              editor: _RequestEditor(
+                                controller: _requestController,
+                                params: http.params,
+                                activeTabId: tabs.activeTabId,
+                                dark: dark,
+                                panelColor: panel,
+                                borderColor: border,
+                                mutedColor: muted,
+                                onBodyChanged: ref
+                                    .read(httpClientProvider.notifier)
+                                    .updateBody,
+                                onBodyModeChanged: ref
+                                    .read(httpClientProvider.notifier)
+                                    .updateBodyMode,
+                                onTestsChanged: ref
+                                    .read(httpClientProvider.notifier)
+                                    .updateTestScript,
+                              ),
+                              response: _ResponseStudio(
+                                controller: _responseController,
+                                response: http.response,
+                                isLoading: http.isLoading,
+                                dark: dark,
+                                panelColor: panel,
+                                borderColor: border,
+                                inkColor: ink,
+                                mutedColor: muted,
+                              ),
                             ),
                           ),
                         ],
@@ -1567,6 +1573,7 @@ class _RequestCommandBar extends StatelessWidget {
     required this.onUrlChanged,
     required this.onSend,
     required this.onCode,
+    required this.onCompare,
     required this.onSave,
   });
 
@@ -1581,6 +1588,7 @@ class _RequestCommandBar extends StatelessWidget {
   final ValueChanged<String> onUrlChanged;
   final VoidCallback onSend;
   final VoidCallback onCode;
+  final VoidCallback onCompare;
   final VoidCallback onSave;
 
   @override
@@ -1680,6 +1688,14 @@ class _RequestCommandBar extends StatelessWidget {
               icon: const Icon(Icons.code_rounded, size: 19),
             ),
             IconButton(
+              tooltip: context.tr(
+                'Compare environments',
+                'Comparar ambientes',
+              ),
+              onPressed: onCompare,
+              icon: const Icon(Icons.compare_arrows_rounded, size: 19),
+            ),
+            IconButton(
               tooltip: context.tr('Save request', 'Salvar request'),
               onPressed: onSave,
               icon: const Icon(Icons.bookmark_add_outlined, size: 19),
@@ -1701,6 +1717,174 @@ class _RequestCommandBar extends StatelessWidget {
         return AppColors.accent;
     }
   }
+}
+
+class _ResizableResponseSplit extends StatefulWidget {
+  const _ResizableResponseSplit({
+    super.key,
+    required this.editor,
+    required this.response,
+    required this.borderColor,
+  });
+
+  final Widget editor;
+  final Widget response;
+  final Color borderColor;
+
+  @override
+  State<_ResizableResponseSplit> createState() =>
+      _ResizableResponseSplitState();
+}
+
+class _ResizableResponseSplitState extends State<_ResizableResponseSplit> {
+  static const _handleHeight = 18.0;
+  static const _minResponseRatio = 0.22;
+  static const _maxResponseRatio = 0.78;
+  final ValueNotifier<double> _responseRatio = ValueNotifier(0.4);
+
+  @override
+  void dispose() {
+    _responseRatio.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final availableHeight = (constraints.maxHeight - _handleHeight)
+              .clamp(0.0, double.infinity);
+          return CustomMultiChildLayout(
+            delegate: _ResponseSplitLayoutDelegate(
+              responseRatio: _responseRatio,
+              handleHeight: _handleHeight,
+            ),
+            children: [
+              LayoutId(
+                id: _ResponseSplitSlot.editor,
+                child: widget.editor,
+              ),
+              LayoutId(
+                id: _ResponseSplitSlot.handle,
+                child: Tooltip(
+                  message: context.tr(
+                    'Drag to resize response',
+                    'Arraste para redimensionar a resposta',
+                  ),
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeUpDown,
+                    child: GestureDetector(
+                      key: const ValueKey('response-resize-handle'),
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragUpdate: (details) {
+                        if (availableHeight <= 0) return;
+                        final minimumEditorHeight =
+                            (availableHeight * 0.65).clamp(0.0, 180.0);
+                        final maxRatio =
+                            (1 - minimumEditorHeight / availableHeight)
+                                .clamp(_minResponseRatio, _maxResponseRatio)
+                                .toDouble();
+                        final currentRatio = _responseRatio.value
+                            .clamp(_minResponseRatio, maxRatio)
+                            .toDouble();
+                        _responseRatio.value =
+                            (currentRatio - details.delta.dy / availableHeight)
+                                .clamp(_minResponseRatio, maxRatio)
+                                .toDouble();
+                      },
+                      onDoubleTap: () => _responseRatio.value = 0.4,
+                      child: SizedBox(
+                        height: _handleHeight,
+                        width: double.infinity,
+                        child: Center(
+                          child: Container(
+                            width: 48,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: widget.borderColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              LayoutId(
+                id: _ResponseSplitSlot.response,
+                child: widget.response,
+              ),
+            ],
+          );
+        },
+      );
+}
+
+enum _ResponseSplitSlot { editor, handle, response }
+
+class _ResponseSplitLayoutDelegate extends MultiChildLayoutDelegate {
+  _ResponseSplitLayoutDelegate({
+    required this.responseRatio,
+    required this.handleHeight,
+  }) : super(relayout: responseRatio);
+
+  final ValueListenable<double> responseRatio;
+  final double handleHeight;
+
+  @override
+  Size getSize(BoxConstraints constraints) => constraints.biggest;
+
+  @override
+  void performLayout(Size size) {
+    final availableHeight =
+        (size.height - handleHeight).clamp(0.0, size.height);
+    final minimumEditorHeight = (availableHeight * 0.65).clamp(0.0, 180.0);
+    final maxRatio = availableHeight <= 0
+        ? _ResizableResponseSplitState._maxResponseRatio
+        : (1 - minimumEditorHeight / availableHeight)
+            .clamp(
+              _ResizableResponseSplitState._minResponseRatio,
+              _ResizableResponseSplitState._maxResponseRatio,
+            )
+            .toDouble();
+    final ratio = responseRatio.value
+        .clamp(
+          _ResizableResponseSplitState._minResponseRatio,
+          maxRatio,
+        )
+        .toDouble();
+    final responseHeight = availableHeight * ratio;
+    final editorHeight = availableHeight - responseHeight;
+
+    layoutChild(
+      _ResponseSplitSlot.editor,
+      BoxConstraints.tight(Size(size.width, editorHeight)),
+    );
+    positionChild(_ResponseSplitSlot.editor, Offset.zero);
+
+    layoutChild(
+      _ResponseSplitSlot.handle,
+      BoxConstraints.tight(Size(size.width, handleHeight)),
+    );
+    positionChild(
+      _ResponseSplitSlot.handle,
+      Offset(0, editorHeight),
+    );
+
+    layoutChild(
+      _ResponseSplitSlot.response,
+      BoxConstraints.tight(Size(size.width, responseHeight)),
+    );
+    positionChild(
+      _ResponseSplitSlot.response,
+      Offset(0, editorHeight + handleHeight),
+    );
+  }
+
+  @override
+  bool shouldRelayout(covariant _ResponseSplitLayoutDelegate oldDelegate) =>
+      responseRatio != oldDelegate.responseRatio ||
+      handleHeight != oldDelegate.handleHeight;
 }
 
 class _RequestEditor extends StatelessWidget {

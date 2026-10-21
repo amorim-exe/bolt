@@ -16,79 +16,73 @@ class ParamsEditorView extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                context.tr('Query Parameters', 'Parâmetros de consulta'),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              context.tr('Query Parameters', 'Parâmetros de consulta'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  ref.read(httpClientProvider.notifier).addQueryParam(),
+              icon: const Icon(Icons.add, size: 14),
+              label: Text(context.tr('Add Parameter', 'Adicionar parâmetro')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                textStyle: const TextStyle(fontSize: 14),
               ),
-              ElevatedButton.icon(
-                onPressed: () =>
-                    ref.read(httpClientProvider.notifier).addQueryParam(),
-                icon: const Icon(Icons.add, size: 14),
-                label: Text(context.tr('Add Parameter', 'Adicionar parâmetro')),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+        if (params.any((param) => param.isAutoDetected)) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome,
+                size: 14,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                context.tr(
+                  'Parameters automatically detected from the URL',
+                  'Parâmetros detetados automaticamente na URL',
                 ),
+                style: TextStyle(color: textColor, fontSize: 12),
               ),
             ],
           ),
-          if (params.any((param) => param.isAutoDetected)) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(
-                  Icons.auto_awesome,
-                  size: 14,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  context.tr(
-                    'Parameters automatically detected from the URL',
-                    'Parâmetros detetados automaticamente na URL',
-                  ),
-                  style: TextStyle(color: textColor, fontSize: 12),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 12),
-          Expanded(
-            child: params.isEmpty
-                ? Center(
-                    child: Text(
-                      context.tr(
-                        'No parameters added yet.',
-                        'Nenhum parâmetro adicionado ainda.',
-                      ),
-                      style: TextStyle(color: textColor, fontSize: 14),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: params.length,
-                    itemBuilder: (context, index) {
-                      final param = params[index];
-                      return _QueryParameterRow(
-                        key: ValueKey('query-param-$index'),
-                        index: index,
-                        param: param,
-                      );
-                    },
-                  ),
-          ),
         ],
-      ),
+        const SizedBox(height: 12),
+        if (params.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              context.tr(
+                'No parameters added yet.',
+                'Nenhum parâmetro adicionado ainda.',
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: textColor, fontSize: 14),
+            ),
+          )
+        else
+          ...params.indexed.map(
+            (entry) => _QueryParameterRow(
+              key: ValueKey('query-param-${entry.$1}'),
+              index: entry.$1,
+              param: entry.$2,
+            ),
+          ),
+      ],
     );
   }
 }

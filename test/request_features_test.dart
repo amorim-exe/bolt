@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bolt/features/environment/domain/environment_model.dart';
 import 'package:bolt/features/http_client/domain/models/request_params.dart';
 import 'package:bolt/features/http_client/domain/models/response_result.dart';
 import 'package:bolt/features/http_client/domain/models/request_params_codec.dart';
@@ -49,10 +50,12 @@ class _CapturingHttpDatasource extends HttpRemoteDataSource {
 
   final ResponseResult result;
   RequestParams? dispatchedParams;
+  final dispatchedRequests = <RequestParams>[];
 
   @override
   Future<ResponseResult> sendRequest(RequestParams params) async {
     dispatchedParams = params;
+    dispatchedRequests.add(params);
     return result;
   }
 }
@@ -103,6 +106,36 @@ void main() {
 
       expect(settings.languageCode, 'en');
       expect(settings.copyWith(languageCode: 'pt_BR').languageCode, 'pt_BR');
+    });
+
+    test('round trips named environment profiles', () {
+      final profile = EnvironmentProfile(
+        id: 'staging',
+        name: 'Staging',
+        variables: [
+          EnvironmentVariable(
+            key: 'baseUrl',
+            value: 'https://staging.example.com',
+            isEnabled: false,
+          ),
+        ],
+      );
+      final settings = AppSettings.fromJson(
+        const AppSettings(environmentProfiles: []).copyWith(
+          environmentProfiles: [profile],
+        ).toJson(),
+      );
+
+      expect(settings.environmentProfiles, hasLength(1));
+      expect(settings.environmentProfiles.single.name, 'Staging');
+      expect(
+        settings.environmentProfiles.single.variables.single.value,
+        'https://staging.example.com',
+      );
+      expect(
+        settings.environmentProfiles.single.variables.single.isEnabled,
+        isFalse,
+      );
     });
   });
 
@@ -203,6 +236,78 @@ void main() {
       client.dispose();
       history.dispose();
       tabs.dispose();
+    });
+
+    group('Environment comparison', () {
+      test('runs each variable profile without changing the active request',
+          () async {
+        final tabs = RequestTabsNotifier();
+        final historyDatasource = _MemoryHistoryDatasource();
+        final history = RequestHistoryNotifier(historyDatasource);
+        final remote = _CapturingHttpDatasource(
+          ResponseResult(
+            statusCode: 200,
+            statusMessage: 'OK',
+            data: const {'ok': true},
+            headers: const {},
+            responseTimeMs: 12,
+            responseSizeBytes: 11,
+          ),
+        );
+        final client = HttpClientNotifier(remote, tabs, history);
+        client.updateUrl(
+          'https://{{baseUrl}}/search?tenant={{tenant}}',
+        );
+        client.updateQueryParam(0, value: '{{tenant}}');
+        final originalParams = client.state.params;
+
+        final results = await client.compareEnvironments([
+          EnvironmentProfile(
+            id: 'staging',
+            name: 'Staging',
+            variables: [
+              EnvironmentVariable(
+                key: 'baseUrl',
+                value: 'staging.example.com',
+              ),
+              EnvironmentVariable(key: 'tenant', value: 'blue'),
+            ],
+          ),
+          EnvironmentProfile(
+            id: 'production',
+            name: 'Production',
+            variables: [
+              EnvironmentVariable(
+                key: 'baseUrl',
+                value: 'api.example.com',
+              ),
+              EnvironmentVariable(key: 'tenant', value: 'green'),
+            ],
+          ),
+        ]);
+
+        expect(results.map((result) => result.environmentName),
+            ['Staging', 'Production']);
+        expect(remote.dispatchedRequests, hasLength(2));
+        expect(
+          remote.dispatchedRequests.map((request) => request.url),
+          [
+            'https://staging.example.com/search',
+            'https://api.example.com/search',
+          ],
+        );
+        expect(
+          remote.dispatchedRequests
+              .map((request) => request.queryParams.single.value),
+          ['blue', 'green'],
+        );
+        expect(client.state.params, same(originalParams));
+        expect(client.state.response, isNull);
+        expect(historyDatasource.entries, isEmpty);
+        client.dispose();
+        history.dispose();
+        tabs.dispose();
+      });
     });
 
     test('creates the Bearer Authorization header with the configured token',
