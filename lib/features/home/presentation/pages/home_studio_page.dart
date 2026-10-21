@@ -64,6 +64,7 @@ class _HomeStudioPageState extends ConsumerState<HomeStudioPage>
     final tabs = ref.watch(requestTabsProvider);
     final workspaces = ref.watch(workspaceProvider);
     final history = ref.watch(requestHistoryProvider);
+    final settings = ref.watch(appSettingsProvider).settings;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final canvas = dark ? const Color(0xFF101116) : const Color(0xFFF2F3F7);
     final panel = dark ? const Color(0xFF191A22) : Colors.white;
@@ -80,6 +81,7 @@ class _HomeStudioPageState extends ConsumerState<HomeStudioPage>
           children: [
             _StudioRail(
               historySelected: _showHistory,
+              languageCode: settings.languageCode,
               onCollections: () => setState(() => _showHistory = false),
               onHistory: () => setState(() => _showHistory = true),
               onSettings: () => showDialog<void>(
@@ -91,6 +93,7 @@ class _HomeStudioPageState extends ConsumerState<HomeStudioPage>
                 builder: (_) => const EnvironmentDialog(),
               ),
               onToggleTheme: () => _toggleTheme(dark),
+              onToggleLanguage: () => _toggleLanguage(settings.languageCode),
             ),
             SizedBox(
               width: 278,
@@ -228,6 +231,24 @@ class _HomeStudioPageState extends ConsumerState<HomeStudioPage>
         _showMessage(context.tr(
           'Could not update theme: $error',
           'Não foi possível atualizar o tema: $error',
+        ));
+      }
+    }
+  }
+
+  Future<void> _toggleLanguage(String currentLanguage) async {
+    final settings = ref.read(appSettingsProvider).settings;
+    try {
+      await ref.read(appSettingsProvider.notifier).save(
+            settings.copyWith(
+              languageCode: currentLanguage == 'en' ? 'pt_BR' : 'en',
+            ),
+          );
+    } catch (error) {
+      if (mounted) {
+        _showMessage(context.tr(
+          'Could not change language: $error',
+          'Não foi possível alterar o idioma: $error',
         ));
       }
     }
@@ -628,19 +649,23 @@ class _HomeStudioPageState extends ConsumerState<HomeStudioPage>
 class _StudioRail extends StatelessWidget {
   const _StudioRail({
     required this.historySelected,
+    required this.languageCode,
     required this.onCollections,
     required this.onHistory,
     required this.onSettings,
     required this.onEnvironment,
     required this.onToggleTheme,
+    required this.onToggleLanguage,
   });
 
   final bool historySelected;
+  final String languageCode;
   final VoidCallback onCollections;
   final VoidCallback onHistory;
   final VoidCallback onSettings;
   final VoidCallback onEnvironment;
   final VoidCallback onToggleTheme;
+  final VoidCallback onToggleLanguage;
 
   @override
   Widget build(BuildContext context) {
@@ -696,6 +721,11 @@ class _StudioRail extends StatelessWidget {
             tooltip: context.tr('Settings', 'Configurações'),
             onTap: onSettings,
           ),
+          const SizedBox(height: 8),
+          _LanguageToggle(
+            languageCode: languageCode,
+            onTap: onToggleLanguage,
+          ),
           const SizedBox(height: 14),
         ],
       ),
@@ -735,6 +765,80 @@ class _RailButton extends StatelessWidget {
               icon,
               size: 20,
               color: selected ? AppColors.primary : null,
+            ),
+          ),
+        ),
+      );
+}
+
+class _LanguageToggle extends StatelessWidget {
+  const _LanguageToggle({
+    required this.languageCode,
+    required this.onTap,
+  });
+
+  final String languageCode;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnglish = languageCode == 'en';
+    return Tooltip(
+      message: context.tr('Switch language', 'Alternar idioma'),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: const ValueKey('language-toggle'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(9),
+          child: Container(
+            width: 50,
+            height: 28,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF252631)
+                  : const Color(0xFFE2E3EA),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Row(
+              children: [
+                _LanguageOption(label: 'PT', selected: !isEnglish),
+                _LanguageOption(label: 'EN', selected: isEnglish),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageOption extends StatelessWidget {
+  const _LanguageOption({
+    required this.label,
+    required this.selected,
+  });
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : null,
+              fontSize: 8,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.2,
             ),
           ),
         ),

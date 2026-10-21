@@ -55,6 +55,15 @@ void main() {
     expect(find.text('Histórico'), findsOneWidget);
     expect(find.text('Resposta'), findsOneWidget);
     expect(find.text('Parâmetros'), findsOneWidget);
+    expect(container.read(appSettingsProvider).settings.languageCode, 'pt_BR');
+    await tester.tap(find.byKey(const ValueKey('language-toggle')));
+    await tester.pumpAndSettle();
+    expect(settingsStore.settings.languageCode, 'en');
+    expect(find.text('Response'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('language-toggle')));
+    await tester.pumpAndSettle();
+    expect(settingsStore.settings.languageCode, 'pt_BR');
+    expect(find.text('Resposta'), findsOneWidget);
 
     await tester.enterText(
       find.byWidgetPredicate(
