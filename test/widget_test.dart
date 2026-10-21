@@ -1,6 +1,7 @@
 import 'package:bolt/features/history/data/datasources/request_history_datasource.dart';
 import 'package:bolt/features/history/data/models/request_history_entity.dart';
 import 'package:bolt/features/history/presentation/history_provider.dart';
+import 'package:bolt/core/settings/app_settings.dart';
 import 'package:bolt/features/http_client/presentation/controllers/request_tabs_provider.dart';
 import 'package:bolt/main.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,18 @@ class _EmptyHistoryDatasource extends RequestHistoryDatasource {
   Future<List<RequestHistoryEntity>> getLatest({int limit = 100}) async => [];
 }
 
+class _MemoryAppSettingsStore implements AppSettingsStore {
+  AppSettings settings = const AppSettings();
+
+  @override
+  Future<AppSettings> load() async => settings;
+
+  @override
+  Future<void> save(AppSettings settings) async {
+    this.settings = settings;
+  }
+}
+
 void main() {
   testWidgets('home shows request tabs and code generation', (tester) async {
     tester.view.physicalSize = const Size(1300, 800);
@@ -19,10 +32,12 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    final settingsStore = _MemoryAppSettingsStore();
     final container = ProviderContainer(
       overrides: [
         requestHistoryDatasourceProvider
             .overrideWithValue(_EmptyHistoryDatasource()),
+        appSettingsStoreProvider.overrideWithValue(settingsStore),
       ],
     );
     addTearDown(container.dispose);
@@ -74,5 +89,21 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    await tester.tap(find.byTooltip('Configurações'));
+    await tester.pumpAndSettle();
+    expect(find.text('Configurações'), findsOneWidget);
+    expect(find.text('Timeout'), findsOneWidget);
+    expect(find.text('Seguir redirecionamentos'), findsOneWidget);
+    expect(find.text('Validar certificados SSL'), findsOneWidget);
+    expect(find.text('Tamanho do texto'), findsOneWidget);
+    expect(find.text('Densidade compacta'), findsOneWidget);
+
+    await tester.tap(find.text('Densidade compacta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guardar'));
+    await tester.pumpAndSettle();
+    expect(settingsStore.settings.compactDensity, isTrue);
+    expect(container.read(appSettingsProvider).settings.compactDensity, isTrue);
   });
 }

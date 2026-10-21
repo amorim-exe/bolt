@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/storage/isar_service.dart';
 import 'core/theme/app_theme.dart';
-import 'core/theme/theme_provider.dart';
+import 'core/settings/app_settings.dart';
 import 'features/home/presentation/pages/home_page.dart';
 
 void main() async {
@@ -22,14 +22,28 @@ class BoltApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
+    final settings = ref.watch(appSettingsProvider).settings;
 
     return MaterialApp(
       title: 'Bolt API Client',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
+      theme: AppTheme.lightTheme.copyWith(
+        visualDensity: settings.compactDensity
+            ? VisualDensity.compact
+            : VisualDensity.standard,
+      ),
+      darkTheme: AppTheme.darkTheme.copyWith(
+        visualDensity: settings.compactDensity
+            ? VisualDensity.compact
+            : VisualDensity.standard,
+      ),
+      themeMode: settings.themeMode,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(settings.textScale),
+        ),
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const HomePage(),
     );
   }

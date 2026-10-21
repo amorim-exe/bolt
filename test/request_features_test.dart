@@ -11,6 +11,7 @@ import 'package:bolt/features/history/data/datasources/request_history_datasourc
 import 'package:bolt/features/history/data/models/request_history_entity.dart';
 import 'package:bolt/features/history/presentation/history_provider.dart';
 import 'package:bolt/core/network/dio_client.dart';
+import 'package:bolt/core/settings/app_settings.dart';
 import 'package:bolt/features/http_client/data/datasources/http_remote_ds.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -56,7 +57,43 @@ class _CapturingHttpDatasource extends HttpRemoteDataSource {
   }
 }
 
+class _MemoryAppSettingsStore implements AppSettingsStore {
+  AppSettings settings = const AppSettings();
+
+  @override
+  Future<AppSettings> load() async => settings;
+
+  @override
+  Future<void> save(AppSettings settings) async {
+    this.settings = settings;
+  }
+}
+
 void main() {
+  group('Application settings', () {
+    test('persists settings and applies HTTP transport configuration', () async {
+      final store = _MemoryAppSettingsStore();
+      final notifier = AppSettingsNotifier(store);
+      await Future<void>.delayed(Duration.zero);
+      final settings = const AppSettings(
+        timeoutSeconds: 45,
+        followRedirects: false,
+        verifySslCertificates: false,
+      );
+
+      await notifier.save(settings);
+
+      expect(store.settings.timeoutSeconds, 45);
+      expect(notifier.state.settings.followRedirects, isFalse);
+      final dioClient = DioClient();
+      dioClient.updateSettings(settings);
+      expect(dioClient.dio.options.connectTimeout, const Duration(seconds: 45));
+      expect(dioClient.dio.options.receiveTimeout, const Duration(seconds: 45));
+      expect(dioClient.dio.options.followRedirects, isFalse);
+      notifier.dispose();
+    });
+  });
+
   group('RequestParamsCodec auth and test settings', () {
     test('round trips authentication and test assertions', () {
       final params = RequestParams(

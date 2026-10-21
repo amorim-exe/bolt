@@ -1,17 +1,33 @@
 // lib/core/network/dio_client.dart
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
+
+import '../settings/app_settings.dart';
 
 class DioClient {
   late final Dio _dio;
+  late bool _verifySslCertificates;
 
-  DioClient() {
+  DioClient([AppSettings settings = const AppSettings()]) {
+    _verifySslCertificates = settings.verifySslCertificates;
     _dio = Dio(
       BaseOptions(
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
+        connectTimeout: Duration(seconds: settings.timeoutSeconds),
+        receiveTimeout: Duration(seconds: settings.timeoutSeconds),
+        followRedirects: settings.followRedirects,
         validateStatus: (_) =>
             true, // Permite capturar 400, 500 sem disparar exception automática
       ),
+    );
+    _dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.badCertificateCallback = (certificate, host, port) =>
+            !_verifySslCertificates;
+        return client;
+      },
     );
 
     // Interceptor para medir tempo de resposta
@@ -43,6 +59,14 @@ class DioClient {
         },
       ),
     );
+  }
+
+  void updateSettings(AppSettings settings) {
+    _verifySslCertificates = settings.verifySslCertificates;
+    _dio.options
+      ..connectTimeout = Duration(seconds: settings.timeoutSeconds)
+      ..receiveTimeout = Duration(seconds: settings.timeoutSeconds)
+      ..followRedirects = settings.followRedirects;
   }
 
   Dio get dio => _dio;

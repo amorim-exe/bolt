@@ -5,6 +5,7 @@ import 'package:bolt/features/history/data/models/request_history_entity.dart';
 import 'package:bolt/features/history/presentation/history_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/settings/app_settings.dart';
 import '../../data/datasources/http_remote_ds.dart';
 import '../../domain/models/request_params.dart';
 import '../../domain/models/request_params_codec.dart';
@@ -13,7 +14,13 @@ import '../../domain/services/response_test_runner.dart';
 import 'request_tabs_provider.dart';
 
 // Provedor do Cliente Dio Base
-final dioClientProvider = Provider((ref) => DioClient());
+final dioClientProvider = Provider((ref) {
+  final client = DioClient(ref.read(appSettingsProvider).settings);
+  ref.listen<AppSettingsState>(appSettingsProvider, (previous, next) {
+    client.updateSettings(next.settings);
+  });
+  return client;
+});
 
 // Provedor do Datasource HTTP
 final httpRemoteDsProvider =

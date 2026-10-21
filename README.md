@@ -31,6 +31,7 @@ Bolt is a modern, lightweight, and native REST API client built with Flutter for
 * **Post-Request Assertions:** Add one assertion per line in the request's Tests tab. Supported values include `status`, `responseTimeMs`, `responseSizeBytes`, `statusMessage`, and nested `data` fields, with `==`, `!=`, `<`, `<=`, `>`, and `>=` comparisons. Example: `status == 200` or `responseTimeMs < 1000`.
 * **Request Tabs & History:** Keep independent requests open and reload previously dispatched requests from history.
 * **Dark & Light Themes:** Fully responsive interface designed to adapt to your development environment preferences.
+* **Configurable Settings:** Persist theme, compact density, text scale, request timeout, redirect handling, and SSL certificate validation locally.
 * **Detailed Response Inspector:** Analyze HTTP status codes, latency in milliseconds, payload size in bytes, formatted JSON payloads, and response headers.
 
 ## Built With

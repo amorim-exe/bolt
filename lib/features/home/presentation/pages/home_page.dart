@@ -1,6 +1,8 @@
 // lib/features/home/presentation/pages/home_page.dart
 import 'dart:convert';
 import 'package:bolt/core/theme/theme_provider.dart';
+import 'package:bolt/core/settings/app_settings.dart';
+import 'package:bolt/features/settings/presentation/settings_dialog.dart';
 import 'package:bolt/features/environment/presentation/environment_dialog.dart';
 import 'package:bolt/features/http_client/presentation/widgets/code_editor_widget.dart';
 import 'package:bolt/features/http_client/presentation/widgets/code_generation_dialog.dart';
@@ -544,18 +546,36 @@ class _HomePageState extends ConsumerState<HomePage>
                           size: 18,
                         ),
                         tooltip: isDark ? 'Modo Claro' : 'Modo Escuro',
-                        onPressed: () {
-                          final currentMode = ref.read(themeModeProvider);
-                          ref.read(themeModeProvider.notifier).state =
-                              currentMode == ThemeMode.dark
-                                  ? ThemeMode.light
-                                  : ThemeMode.dark;
+                        onPressed: () async {
+                          final current =
+                              ref.read(appSettingsProvider).settings;
+                          try {
+                            await ref.read(appSettingsProvider.notifier).save(
+                                  current.copyWith(
+                                    themeMode: isDark
+                                        ? ThemeMode.light
+                                        : ThemeMode.dark,
+                                  ),
+                                );
+                          } catch (error) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Falha ao guardar o tema: $error',
+                                ),
+                              ),
+                            );
+                          }
                         },
                       ),
                       IconButton(
                         icon: const Icon(Icons.settings_outlined, size: 18),
                         tooltip: 'Configurações',
-                        onPressed: () {},
+                        onPressed: () => showDialog<void>(
+                          context: context,
+                          builder: (_) => const SettingsDialog(),
+                        ),
                       ),
                     ],
                   ),
