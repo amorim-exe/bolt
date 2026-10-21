@@ -2,6 +2,50 @@ enum HttpMethod { get, post, put, patch, delete, head, options, trace, connect }
 
 enum BodyMode { none, json, text, formUrlEncoded, formData, binary }
 
+enum AuthType { none, bearer, basic, apiKey }
+
+enum ApiKeyLocation { header, query }
+
+class RequestAuth {
+  const RequestAuth({
+    this.type = AuthType.none,
+    this.token = '',
+    this.username = '',
+    this.password = '',
+    this.apiKeyName = '',
+    this.apiKeyValue = '',
+    this.apiKeyLocation = ApiKeyLocation.header,
+  });
+
+  final AuthType type;
+  final String token;
+  final String username;
+  final String password;
+  final String apiKeyName;
+  final String apiKeyValue;
+  final ApiKeyLocation apiKeyLocation;
+
+  RequestAuth copyWith({
+    AuthType? type,
+    String? token,
+    String? username,
+    String? password,
+    String? apiKeyName,
+    String? apiKeyValue,
+    ApiKeyLocation? apiKeyLocation,
+  }) {
+    return RequestAuth(
+      type: type ?? this.type,
+      token: token ?? this.token,
+      username: username ?? this.username,
+      password: password ?? this.password,
+      apiKeyName: apiKeyName ?? this.apiKeyName,
+      apiKeyValue: apiKeyValue ?? this.apiKeyValue,
+      apiKeyLocation: apiKeyLocation ?? this.apiKeyLocation,
+    );
+  }
+}
+
 class FormFieldItem {
   String key;
   String value;
@@ -28,9 +72,14 @@ class QueryParamItem {
   String key;
   String value;
   bool isEnabled;
+  bool isAutoDetected;
 
-  QueryParamItem(
-      {required this.key, required this.value, this.isEnabled = true});
+  QueryParamItem({
+    required this.key,
+    required this.value,
+    this.isEnabled = true,
+    this.isAutoDetected = false,
+  });
 }
 
 class RequestParams {
@@ -41,6 +90,8 @@ class RequestParams {
   final String? body;
   final BodyMode bodyMode;
   final List<FormFieldItem> formFields;
+  final RequestAuth auth;
+  final String testScript;
 
   RequestParams({
     required this.url,
@@ -50,6 +101,8 @@ class RequestParams {
     this.body,
     this.bodyMode = BodyMode.json,
     List<FormFieldItem>? formFields,
+    this.auth = const RequestAuth(),
+    this.testScript = '',
   })  : headers = headers ?? [],
         queryParams = queryParams ?? [],
         formFields = formFields ?? [];
@@ -62,6 +115,8 @@ class RequestParams {
     String? body,
     BodyMode? bodyMode,
     List<FormFieldItem>? formFields,
+    RequestAuth? auth,
+    String? testScript,
   }) {
     return RequestParams(
       url: url ?? this.url,
@@ -71,6 +126,8 @@ class RequestParams {
       body: body ?? this.body,
       bodyMode: bodyMode ?? this.bodyMode,
       formFields: formFields ?? this.formFields,
+      auth: auth ?? this.auth,
+      testScript: testScript ?? this.testScript,
     );
   }
 }

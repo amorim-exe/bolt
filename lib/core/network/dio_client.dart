@@ -9,7 +9,8 @@ class DioClient {
       BaseOptions(
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
-        validateStatus: (_) => true, // Permite capturar 400, 500 sem disparar exception automática
+        validateStatus: (_) =>
+            true, // Permite capturar 400, 500 sem disparar exception automática
       ),
     );
 
@@ -26,6 +27,8 @@ class DioClient {
             final duration = DateTime.now().millisecondsSinceEpoch - startTime;
             response.extra['responseTime'] = duration;
           }
+          response.extra['capturedCookies'] =
+              response.headers['set-cookie'] ?? const <String>[];
           return handler.next(response);
         },
         onError: (DioException e, handler) {
@@ -34,6 +37,8 @@ class DioClient {
             final duration = DateTime.now().millisecondsSinceEpoch - startTime;
             e.response?.extra['responseTime'] = duration;
           }
+          e.response?.extra['capturedCookies'] =
+              e.response?.headers['set-cookie'] ?? const <String>[];
           return handler.next(e);
         },
       ),

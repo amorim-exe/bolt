@@ -22,12 +22,16 @@ class HttpRemoteDataSource {
         }
       }
 
-      final activeQueryParams = <String, dynamic>{};
+      final queryValues = <String, List<String>>{};
       for (var q in params.queryParams) {
         if (q.isEnabled && q.key.trim().isNotEmpty) {
-          activeQueryParams[q.key.trim()] = q.value.trim();
+          queryValues.putIfAbsent(q.key.trim(), () => []).add(q.value.trim());
         }
       }
+      final activeQueryParams = <String, dynamic>{
+        for (final entry in queryValues.entries)
+          entry.key: entry.value.length == 1 ? entry.value.single : entry.value,
+      };
 
       dynamic data;
       String? contentType;
@@ -70,6 +74,7 @@ class HttpRemoteDataSource {
         headers: activeHeaders.isEmpty ? null : activeHeaders,
         contentType: contentType,
         method: params.method.name.toUpperCase(),
+        responseType: ResponseType.bytes,
       );
 
       final method = params.method.name.toUpperCase();
@@ -84,9 +89,14 @@ class HttpRemoteDataSource {
       final responseTime = response.extra['responseTime'] as int? ?? 0;
 
       // Tamanho aproximado da resposta em bytes
-      final responseString =
-          response.data is String ? response.data : jsonEncode(response.data);
-      final responseSize = utf8.encode(responseString).length;
+      final responseBytes = response.data is List<int>
+          ? response.data as List<int>
+          : utf8.encode(response.data?.toString() ?? '');
+      final responseData = _decodeResponse(
+        responseBytes,
+        response.headers.value(Headers.contentTypeHeader),
+      );
+      final responseSize = responseBytes.length;
 
       // Normaliza os headers do Dio
       final normalizedHeaders = <String, List<String>>{};
@@ -97,22 +107,40 @@ class HttpRemoteDataSource {
       return ResponseResult(
         statusCode: response.statusCode ?? 0,
         statusMessage: response.statusMessage ?? '',
-        data: response.data,
+        data: responseData,
         headers: normalizedHeaders,
         responseTimeMs: responseTime,
         responseSizeBytes: responseSize,
+        cookies: List<String>.from(
+          response.extra['capturedCookies'] as List? ?? const [],
+        ),
       );
     } on DioException catch (e) {
       final responseTime = e.response?.extra['responseTime'] as int? ?? 0;
+      final responseBytes = e.response?.data is List<int>
+          ? e.response!.data as List<int>
+          : utf8.encode(e.response?.data?.toString() ?? '');
+      final responseHeaders = <String, List<String>>{};
+      e.response?.headers.forEach((name, values) {
+        responseHeaders[name] = values;
+      });
 
       return ResponseResult(
         statusCode: e.response?.statusCode ?? 500,
         statusMessage:
             e.response?.statusMessage ?? e.message ?? 'Erro desconhecido',
-        data: e.response?.data ?? {'error': e.message},
-        headers: {},
+        data: e.response == null
+            ? {'error': e.message}
+            : _decodeResponse(
+                responseBytes,
+                e.response?.headers.value(Headers.contentTypeHeader),
+              ),
+        headers: responseHeaders,
         responseTimeMs: responseTime,
-        responseSizeBytes: 0,
+        responseSizeBytes: responseBytes.length,
+        cookies: List<String>.from(
+          e.response?.extra['capturedCookies'] as List? ?? const [],
+        ),
       );
     } catch (e) {
       return ResponseResult(
@@ -124,6 +152,26 @@ class HttpRemoteDataSource {
         responseSizeBytes: 0,
       );
     }
+  }
+
+  dynamic _decodeResponse(List<int> bytes, String? contentType) {
+    final mimeType = contentType?.split(';').first.trim().toLowerCase() ?? '';
+    final isText = mimeType.startsWith('text/') ||
+        mimeType.contains('json') ||
+        mimeType.contains('xml') ||
+        mimeType.contains('javascript') ||
+        mimeType.contains('x-www-form-urlencoded');
+    if (!isText) return bytes;
+
+    final text = utf8.decode(bytes, allowMalformed: true);
+    if (mimeType.contains('json')) {
+      try {
+        return jsonDecode(text);
+      } on FormatException {
+        return text;
+      }
+    }
+    return text;
   }
 
   Map<String, dynamic> _formFieldsToMap(List<FormFieldItem> fields) {
