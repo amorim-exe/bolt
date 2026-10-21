@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 class AppSettings {
   const AppSettings({
     this.themeMode = ThemeMode.dark,
+    this.languageCode = 'pt_BR',
     this.timeoutSeconds = 30,
     this.followRedirects = true,
     this.verifySslCertificates = true,
@@ -16,6 +17,7 @@ class AppSettings {
   });
 
   final ThemeMode themeMode;
+  final String languageCode;
   final int timeoutSeconds;
   final bool followRedirects;
   final bool verifySslCertificates;
@@ -24,6 +26,7 @@ class AppSettings {
 
   AppSettings copyWith({
     ThemeMode? themeMode,
+    String? languageCode,
     int? timeoutSeconds,
     bool? followRedirects,
     bool? verifySslCertificates,
@@ -32,6 +35,7 @@ class AppSettings {
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
+      languageCode: languageCode ?? this.languageCode,
       timeoutSeconds: timeoutSeconds ?? this.timeoutSeconds,
       followRedirects: followRedirects ?? this.followRedirects,
       verifySslCertificates:
@@ -43,6 +47,7 @@ class AppSettings {
 
   Map<String, dynamic> toJson() => {
         'themeMode': themeMode.name,
+        'languageCode': languageCode,
         'timeoutSeconds': timeoutSeconds,
         'followRedirects': followRedirects,
         'verifySslCertificates': verifySslCertificates,
@@ -58,6 +63,7 @@ class AppSettings {
         (mode) => mode.name == json['themeMode'],
         orElse: () => ThemeMode.dark,
       ),
+      languageCode: json['languageCode'] == 'en' ? 'en' : 'pt_BR',
       timeoutSeconds: timeout is int && timeout >= 1 && timeout <= 300
           ? timeout
           : 30,

@@ -8,12 +8,16 @@ class CodeEditorWidget extends StatefulWidget {
   final String initialText;
   final ValueChanged<String> onChanged;
   final bool isDark;
+  final bool readOnly;
+  final bool syntaxHighlight;
 
   const CodeEditorWidget({
     super.key,
     required this.initialText,
     required this.onChanged,
     required this.isDark,
+    this.readOnly = false,
+    this.syntaxHighlight = true,
   });
 
   @override
@@ -21,39 +25,38 @@ class CodeEditorWidget extends StatefulWidget {
 }
 
 class _CodeEditorWidgetState extends State<CodeEditorWidget> {
-late final CodeLineEditingController _controller;
-bool _editorReady = false;
+  late final CodeLineEditingController _controller;
+  bool _editorReady = false;
 
-@override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  _controller =
-      CodeLineEditingController.fromText(widget.initialText);
+    _controller = CodeLineEditingController.fromText(widget.initialText);
 
-  _controller.addListener(_handleTextChanged);
+    _controller.addListener(_handleTextChanged);
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (!mounted) return;
-    _editorReady = true;
-  });
-}
-
-void _handleTextChanged() {
-  if (!_editorReady) return;
-
-  widget.onChanged(_controller.text);
-}
-
-@override
-void didUpdateWidget(covariant CodeEditorWidget oldWidget) {
-  super.didUpdateWidget(oldWidget);
-
-  if (oldWidget.initialText != widget.initialText &&
-      _controller.text != widget.initialText) {
-    _controller.text = widget.initialText;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _editorReady = true;
+    });
   }
-}
+
+  void _handleTextChanged() {
+    if (!_editorReady) return;
+
+    widget.onChanged(_controller.text);
+  }
+
+  @override
+  void didUpdateWidget(covariant CodeEditorWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.initialText != widget.initialText &&
+        _controller.text != widget.initialText) {
+      _controller.text = widget.initialText;
+    }
+  }
 
   @override
   void dispose() {
@@ -69,15 +72,22 @@ void didUpdateWidget(covariant CodeEditorWidget oldWidget) {
 
     return CodeEditor(
       controller: _controller,
-      readOnly: false,
-      padding: const EdgeInsets.all(8),
+      readOnly: widget.readOnly,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       style: CodeEditorStyle(
+        fontSize: 13,
+        fontFamily: 'monospace',
+        fontHeight: 1.45,
+        textColor:
+            widget.isDark ? const Color(0xFFD4D4D4) : const Color(0xFF24292F),
+        backgroundColor:
+            widget.isDark ? const Color(0xFF181824) : const Color(0xFFFCFCFD),
         codeTheme: CodeHighlightTheme(
-          languages: {
-            'json': CodeHighlightThemeMode(
-              mode: lang_json.langJson,
-            ),
-          },
+          languages: widget.syntaxHighlight
+              ? {
+                  'json': CodeHighlightThemeMode(mode: lang_json.langJson),
+                }
+              : const {},
           theme: theme,
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../controllers/http_client_provider.dart';
 
 class _HeaderPreset {
@@ -20,7 +21,7 @@ const _headerPresets = [
   _HeaderPreset('Content-Type: form-urlencoded', 'Content-Type',
       'application/x-www-form-urlencoded'),
   _HeaderPreset('Accept: JSON', 'Accept', 'application/json'),
-  _HeaderPreset('Accept: qualquer formato', 'Accept', '*/*'),
+  _HeaderPreset('Accept: any format', 'Accept', '*/*'),
   _HeaderPreset('Cache-Control: no-cache', 'Cache-Control', 'no-cache'),
 ];
 
@@ -43,13 +44,14 @@ class HeadersEditorView extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Headers da Requisição',
+              Text(context.tr('Request Headers', 'Headers da Requisição'),
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   PopupMenuButton<_HeaderPreset>(
-                    tooltip: 'Presets de headers',
+                    tooltip:
+                        context.tr('Header presets', 'Presets de headers'),
                     icon: const Icon(Icons.bolt_outlined),
                     onSelected: (preset) => ref
                         .read(httpClientProvider.notifier)
@@ -58,7 +60,12 @@ class HeadersEditorView extends ConsumerWidget {
                       for (final preset in _headerPresets)
                         PopupMenuItem(
                           value: preset,
-                          child: Text(preset.label),
+                          child: Text(context.tr(
+                            preset.label,
+                            preset.label == 'Accept: any format'
+                                ? 'Accept: qualquer formato'
+                                : preset.label,
+                          )),
                         ),
                     ],
                   ),
@@ -67,7 +74,7 @@ class HeadersEditorView extends ConsumerWidget {
                     onPressed: () =>
                         ref.read(httpClientProvider.notifier).addHeader(),
                     icon: const Icon(Icons.add, size: 14),
-                    label: const Text('Adicionar Header'),
+                    label: Text(context.tr('Add Header', 'Adicionar Header')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -85,7 +92,10 @@ class HeadersEditorView extends ConsumerWidget {
             child: headers.isEmpty
                 ? Center(
                     child: Text(
-                      'Nenhum header adicionado ainda. Clique em "Adicionar Header".',
+                      context.tr(
+                        'No headers added yet. Click "Add Header".',
+                        'Nenhum header adicionado ainda. Clique em "Adicionar Header".',
+                      ),
                       style: TextStyle(color: textColor, fontSize: 14),
                     ),
                   )
@@ -116,10 +126,13 @@ class HeadersEditorView extends ConsumerWidget {
                                 onChanged: (val) => ref
                                     .read(httpClientProvider.notifier)
                                     .updateHeader(index, key: val),
-                                decoration: const InputDecoration(
-                                  hintText: 'Chave (ex: Authorization)',
+                                decoration: InputDecoration(
+                                  hintText: context.tr(
+                                    'Key (e.g. Authorization)',
+                                    'Chave (ex: Authorization)',
+                                  ),
                                   isDense: true,
-                                  border: OutlineInputBorder(),
+                                  border: const OutlineInputBorder(),
                                 ),
                                 style: const TextStyle(fontSize: 14),
                               ),

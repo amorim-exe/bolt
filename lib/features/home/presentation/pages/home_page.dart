@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:bolt/core/theme/theme_provider.dart';
 import 'package:bolt/core/settings/app_settings.dart';
+import 'package:bolt/core/localization/app_localizations.dart';
 import 'package:bolt/features/settings/presentation/settings_dialog.dart';
 import 'package:bolt/features/environment/presentation/environment_dialog.dart';
 import 'package:bolt/features/http_client/presentation/widgets/code_editor_widget.dart';
@@ -98,7 +99,7 @@ class _HomePageState extends ConsumerState<HomePage>
           ),
           const Spacer(),
           IconButton(
-            tooltip: 'Copiar $label',
+            tooltip: context.tr('Copy $label', 'Copiar $label'),
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.copy, size: 16),
             onPressed: onCopy,
@@ -132,7 +133,12 @@ class _HomePageState extends ConsumerState<HomePage>
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Falha ao salvar no histórico: $error')),
+        SnackBar(
+          content: Text(context.tr(
+            'Failed to save to history: $error',
+            'Falha ao salvar no histórico: $error',
+          )),
+        ),
       );
     }
   }
@@ -185,7 +191,7 @@ class _HomePageState extends ConsumerState<HomePage>
                         icon: const Icon(Icons.create_new_folder_outlined,
                             size: 16),
                         onPressed: () => _showAddWorkspaceDialog(context),
-                        tooltip: 'Novo Workspace',
+                        tooltip: context.tr('New Workspace', 'Novo Workspace'),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -193,7 +199,7 @@ class _HomePageState extends ConsumerState<HomePage>
                       IconButton(
                         icon: const Icon(Icons.add, size: 16),
                         onPressed: () => _showAddRequestDialog(context),
-                        tooltip: 'Novo Request',
+                        tooltip: context.tr('New Request', 'Novo Request'),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -202,7 +208,7 @@ class _HomePageState extends ConsumerState<HomePage>
                         onPressed: workspaceState.selectedWorkspace == null
                             ? null
                             : _importCollection,
-                        tooltip: 'Importar collection',
+                        tooltip: context.tr('Import collection', 'Importar collection'),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -212,7 +218,7 @@ class _HomePageState extends ConsumerState<HomePage>
                         onPressed: workspaceState.selectedWorkspace == null
                             ? null
                             : _exportCollection,
-                        tooltip: 'Exportar collection',
+                        tooltip: context.tr('Export collection', 'Exportar collection'),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -227,7 +233,7 @@ class _HomePageState extends ConsumerState<HomePage>
                     children: [
                       Expanded(
                         child: _sidebarSectionButton(
-                          label: 'Collections',
+                          label: context.tr('Collections', 'Collections'),
                           icon: Icons.folder_copy_outlined,
                           selected: !_showHistory,
                           onTap: () => setState(() => _showHistory = false),
@@ -235,7 +241,7 @@ class _HomePageState extends ConsumerState<HomePage>
                       ),
                       Expanded(
                         child: _sidebarSectionButton(
-                          label: 'History',
+                          label: context.tr('History', 'Histórico'),
                           icon: Icons.history,
                           selected: _showHistory,
                           onTap: () => setState(() => _showHistory = true),
@@ -256,7 +262,10 @@ class _HomePageState extends ConsumerState<HomePage>
                             child: Padding(
                               padding: const EdgeInsets.all(12),
                               child: Text(
-                                'Não foi possível carregar o histórico: $error',
+                                context.tr(
+                                  'Could not load history: $error',
+                                  'Não foi possível carregar o histórico: $error',
+                                ),
                                 style: const TextStyle(fontSize: 12),
                               ),
                             ),
@@ -271,7 +280,7 @@ class _HomePageState extends ConsumerState<HomePage>
                                 child: Row(
                                   children: [
                                     Text(
-                                      'Recent requests',
+                                      context.tr('Recent requests', 'Requisições recentes'),
                                       style: TextStyle(
                                         color: isDark
                                             ? AppColors.textSecondaryDark
@@ -281,7 +290,7 @@ class _HomePageState extends ConsumerState<HomePage>
                                     ),
                                     const Spacer(),
                                     IconButton(
-                                      tooltip: 'Limpar histórico',
+                                      tooltip: context.tr('Clear history', 'Limpar histórico'),
                                       visualDensity: VisualDensity.compact,
                                       onPressed: entries.isEmpty
                                           ? null
@@ -299,9 +308,9 @@ class _HomePageState extends ConsumerState<HomePage>
                               ),
                               Expanded(
                                 child: entries.isEmpty
-                                    ? const Center(
+                                    ? Center(
                                         child: Text(
-                                          'No requests yet',
+                                          context.tr('No requests yet', 'Nenhuma requisição ainda'),
                                           style: TextStyle(fontSize: 12),
                                         ),
                                       )
@@ -416,7 +425,7 @@ class _HomePageState extends ConsumerState<HomePage>
                                                 workspace.id,
                                                 workspace.name,
                                               ),
-                                              tooltip: 'Renomear Workspace',
+                                              tooltip: context.tr('Rename Workspace', 'Renomear Workspace'),
                                               padding: const EdgeInsets.all(4),
                                               constraints:
                                                   const BoxConstraints(),
@@ -429,7 +438,7 @@ class _HomePageState extends ConsumerState<HomePage>
                                               onPressed: () =>
                                                   _showDeleteWorkspaceDialog(
                                                       context, workspace.id),
-                                              tooltip: 'Deletar Workspace',
+                                              tooltip: context.tr('Delete Workspace', 'Excluir Workspace'),
                                               padding: const EdgeInsets.all(4),
                                               constraints:
                                                   const BoxConstraints(),
@@ -483,7 +492,7 @@ class _HomePageState extends ConsumerState<HomePage>
                                                       request.id,
                                                       request.name,
                                                     ),
-                                                    tooltip: 'Renomear Request',
+                                                    tooltip: context.tr('Rename Request', 'Renomear Request'),
                                                     padding:
                                                         const EdgeInsets.all(4),
                                                     constraints:
@@ -499,7 +508,7 @@ class _HomePageState extends ConsumerState<HomePage>
                                                             .notifier)
                                                         .deleteRequest(
                                                             request.id),
-                                                    tooltip: 'Deletar Request',
+                                                    tooltip: context.tr('Delete Request', 'Excluir Request'),
                                                     padding:
                                                         const EdgeInsets.all(4),
                                                     constraints:
@@ -532,7 +541,7 @@ class _HomePageState extends ConsumerState<HomePage>
                     children: [
                       IconButton(
                         icon: const Icon(Icons.code, size: 18),
-                        tooltip: 'Variáveis de Ambiente',
+                        tooltip: context.tr('Environment Variables', 'Variáveis de Ambiente'),
                         onPressed: () {
                           showDialog(
                             context: context,
@@ -545,7 +554,9 @@ class _HomePageState extends ConsumerState<HomePage>
                           isDark ? Icons.light_mode : Icons.dark_mode,
                           size: 18,
                         ),
-                        tooltip: isDark ? 'Modo Claro' : 'Modo Escuro',
+                        tooltip: isDark
+                            ? context.tr('Light mode', 'Modo claro')
+                            : context.tr('Dark mode', 'Modo escuro'),
                         onPressed: () async {
                           final current =
                               ref.read(appSettingsProvider).settings;
@@ -562,7 +573,10 @@ class _HomePageState extends ConsumerState<HomePage>
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Falha ao guardar o tema: $error',
+                                  context.tr(
+                                    'Failed to save theme: $error',
+                                    'Falha ao guardar o tema: $error',
+                                  ),
                                 ),
                               ),
                             );
@@ -571,7 +585,7 @@ class _HomePageState extends ConsumerState<HomePage>
                       ),
                       IconButton(
                         icon: const Icon(Icons.settings_outlined, size: 18),
-                        tooltip: 'Configurações',
+                        tooltip: context.tr('Settings', 'Configurações'),
                         onPressed: () => showDialog<void>(
                           context: context,
                           builder: (_) => const SettingsDialog(),
@@ -651,14 +665,14 @@ class _HomePageState extends ConsumerState<HomePage>
                                       const SizedBox(width: 8),
                                       Flexible(
                                         child: Text(
-                                          _requestTabLabel(tab),
+                                          _requestTabLabel(context, tab),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(fontSize: 12),
                                         ),
                                       ),
                                       IconButton(
-                                        tooltip: 'Fechar aba',
+                                        tooltip: context.tr('Close tab', 'Fechar aba'),
                                         visualDensity: VisualDensity.compact,
                                         onPressed: () =>
                                             _closeRequestTab(tab.id),
@@ -672,7 +686,7 @@ class _HomePageState extends ConsumerState<HomePage>
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Nova aba',
+                          tooltip: context.tr('New tab', 'Nova aba'),
                           visualDensity: VisualDensity.compact,
                           onPressed: _openRequestTab,
                           icon: const Icon(Icons.add, size: 18),
@@ -732,9 +746,11 @@ class _HomePageState extends ConsumerState<HomePage>
                             onChanged: (val) => ref
                                 .read(httpClientProvider.notifier)
                                 .updateUrl(val),
-                            decoration: const InputDecoration(
-                              hintText:
-                                  'Digite a URL da API (ex: {{baseUrl}}/todos/1)',
+                            decoration: InputDecoration(
+                              hintText: context.tr(
+                                'Enter API URL (e.g. {{baseUrl}}/todos/1)',
+                                'Digite a URL da API (ex: {{baseUrl}}/todos/1)',
+                              ),
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 12),
@@ -762,13 +778,13 @@ class _HomePageState extends ConsumerState<HomePage>
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.send, size: 14),
-                        label: const Text('Send',
-                            style: TextStyle(
+                        label: Text(context.tr('Send', 'Enviar'),
+                            style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
                       const SizedBox(width: 4),
                       IconButton(
-                        tooltip: 'Generate Code',
+                        tooltip: context.tr('Generate Code', 'Gerar código'),
                         onPressed: () => showDialog(
                           context: context,
                           builder: (_) =>
@@ -782,9 +798,12 @@ class _HomePageState extends ConsumerState<HomePage>
                           final workspaceState = ref.read(workspaceProvider);
                           if (workspaceState.selectedWorkspace == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content:
-                                      Text('Selecione um workspace primeiro')),
+                              SnackBar(
+                                content: Text(context.tr(
+                                  'Select a workspace first',
+                                  'Selecione um workspace primeiro',
+                                )),
+                              ),
                             );
                             return;
                           }
@@ -840,16 +859,18 @@ class _HomePageState extends ConsumerState<HomePage>
 
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Requisição salva com sucesso no Bolt! ⚡'),
+                              SnackBar(
+                                content: Text(context.tr(
+                                  'Request saved to Bolt! ⚡',
+                                  'Requisição salva com sucesso no Bolt! ⚡',
+                                )),
                                 duration: Duration(seconds: 1),
                               ),
                             );
                           }
                         },
                         icon: const Icon(Icons.save_outlined, size: 18),
-                        tooltip: 'Salvar Requisição',
+                        tooltip: context.tr('Save Request', 'Salvar requisição'),
                         style: IconButton.styleFrom(
                           backgroundColor: surfaceColor,
                           side: BorderSide(color: borderColor),
@@ -877,12 +898,12 @@ class _HomePageState extends ConsumerState<HomePage>
                           TabBar(
                             controller: _requestTabController,
                             isScrollable: true,
-                            tabs: const [
-                              Tab(text: 'Params'),
-                              Tab(text: 'Headers'),
-                              Tab(text: 'Body'),
-                              Tab(text: 'Auth'),
-                              Tab(text: 'Tests'),
+                            tabs: [
+                              Tab(text: context.tr('Params', 'Parâmetros')),
+                              const Tab(text: 'Headers'),
+                              const Tab(text: 'Body'),
+                              const Tab(text: 'Auth'),
+                              const Tab(text: 'Tests'),
                             ],
                             labelColor: AppColors.primary,
                             unselectedLabelColor: isDark
@@ -944,8 +965,8 @@ class _HomePageState extends ConsumerState<HomePage>
                               children: [
                                 const Icon(Icons.http, size: 18),
                                 const SizedBox(width: 8),
-                                const Text(
-                                  'Response',
+                                Text(
+                                  context.tr('Response', 'Resposta'),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
@@ -1009,14 +1030,31 @@ class _HomePageState extends ConsumerState<HomePage>
                                                   ).convert(
                                                     state.response!.data,
                                                   );
+                                    final responseData = state.response?.data;
+                                    final responseIsJson =
+                                        responseData is Map ||
+                                            responseData is List ||
+                                            _responseContentType(state.response)
+                                                  .contains('json');
+                                    final responseIsBinary =
+                                        responseData is List<int>;
+                                    final responseLabel = responseIsBinary
+                                        ? 'Binary'
+                                        : responseIsJson
+                                            ? 'JSON'
+                                            : 'Text';
 
                                     return Column(
                                       children: [
                                         _responseToolbar(
                                           isDark: isDark,
                                           borderColor: borderColor,
-                                          label: 'JSON',
-                                          icon: Icons.data_object,
+                                          label: responseLabel,
+                                          icon: responseIsBinary
+                                              ? Icons.image_outlined
+                                              : responseIsJson
+                                                  ? Icons.data_object
+                                                  : Icons.subject,
                                           onCopy: state.response == null
                                               ? null
                                               : () => _copyResponseText(
@@ -1033,7 +1071,10 @@ class _HomePageState extends ConsumerState<HomePage>
                                             child: state.response == null
                                                 ? Center(
                                                     child: Text(
-                                                      'Execute uma requisição para ver a resposta.',
+                                                      context.tr(
+                                                        'Send a request to see the response.',
+                                                        'Execute uma requisição para ver a resposta.',
+                                                      ),
                                                       style: TextStyle(
                                                         color: isDark
                                                             ? AppColors
@@ -1043,23 +1084,17 @@ class _HomePageState extends ConsumerState<HomePage>
                                                       ),
                                                     ),
                                                   )
-                                                : SingleChildScrollView(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            16),
-                                                    child: SelectableText(
-                                                      responseText,
-                                                      style: TextStyle(
-                                                        fontFamily: 'monospace',
-                                                        fontSize: 13,
-                                                        height: 1.6,
-                                                        color: isDark
-                                                            ? AppColors
-                                                                .textPrimaryDark
-                                                            : AppColors
-                                                                .textPrimaryLight,
-                                                      ),
+                                                : CodeEditorWidget(
+                                                    key: ValueKey(
+                                                      'response-${tabsState.activeTabId}-${state.response!.statusCode}-${state.response!.responseSizeBytes}-${state.response!.responseTimeMs}',
                                                     ),
+                                                    initialText: responseText,
+                                                    onChanged: (_) {},
+                                                    isDark: isDark,
+                                                    readOnly: true,
+                                                    syntaxHighlight:
+                                                        responseIsJson &&
+                                                            !responseIsBinary,
                                                   ),
                                           ),
                                         ),
@@ -1085,13 +1120,19 @@ class _HomePageState extends ConsumerState<HomePage>
                                         _responseToolbar(
                                           isDark: isDark,
                                           borderColor: borderColor,
-                                          label: 'Response Headers',
+                                          label: context.tr(
+                                            'Response Headers',
+                                            'Headers da resposta',
+                                          ),
                                           icon: Icons.list_alt,
                                           onCopy: state.response == null
                                               ? null
                                               : () => _copyResponseText(
                                                     headersText,
-                                                    'Headers copiados!',
+                                                    context.tr(
+                                                      'Headers copied!',
+                                                      'Headers copiados!',
+                                                    ),
                                                   ),
                                         ),
                                         Expanded(
@@ -1103,7 +1144,10 @@ class _HomePageState extends ConsumerState<HomePage>
                                             child: state.response == null
                                                 ? Center(
                                                     child: Text(
-                                                      'Nenhum header recebido.',
+                                                      context.tr(
+                                                        'No response headers.',
+                                                        'Nenhum header recebido.',
+                                                      ),
                                                       style: TextStyle(
                                                         color: isDark
                                                             ? AppColors
@@ -1198,8 +1242,11 @@ class _HomePageState extends ConsumerState<HomePage>
                                       alignment: Alignment.topLeft,
                                       padding: const EdgeInsets.all(16),
                                       child: response == null
-                                          ? const Text(
-                                              'Nenhuma resposta disponível.',
+                                          ? Text(
+                                              context.tr(
+                                                'No response available.',
+                                                'Nenhuma resposta disponível.',
+                                              ),
                                             )
                                           : imageBytes != null &&
                                                   contentType
@@ -1219,8 +1266,11 @@ class _HomePageState extends ConsumerState<HomePage>
                                                         ),
                                                       ),
                                                     )
-                                                  : const Text(
-                                                      'A resposta não é uma imagem nem HTML.',
+                                                  : Text(
+                                                      context.tr(
+                                                        'The response is neither an image nor HTML.',
+                                                        'A resposta não é uma imagem nem HTML.',
+                                                      ),
                                                     ),
                                     );
                                   },
@@ -1230,10 +1280,11 @@ class _HomePageState extends ConsumerState<HomePage>
                                     final cookies = state.response?.cookies ??
                                         const <String>[];
                                     return cookies.isEmpty
-                                        ? const Center(
-                                            child: Text(
+                                        ? Center(
+                                            child: Text(context.tr(
+                                              'No cookies received in this response.',
                                               'Nenhum cookie recebido nesta resposta.',
-                                            ),
+                                            )),
                                           )
                                         : ListView(
                                             padding: const EdgeInsets.all(16),
@@ -1255,9 +1306,12 @@ class _HomePageState extends ConsumerState<HomePage>
                                     final results =
                                         state.response?.testResults ?? [];
                                     return results.isEmpty
-                                        ? const Center(
+                                        ? Center(
                                             child: Text(
-                                              'Sem testes executados. Adicione assertions na aba Tests e envie a requisição.',
+                                              context.tr(
+                                                'No tests have run. Add assertions in the Tests tab and send the request.',
+                                                'Sem testes executados. Adicione asserções na aba Tests e envie a requisição.',
+                                              ),
                                               textAlign: TextAlign.center,
                                             ),
                                           )
@@ -1373,17 +1427,17 @@ class _HomePageState extends ConsumerState<HomePage>
             Row(
               children: [
                 Text(params.bodyMode == BodyMode.formData
-                    ? 'Multipart fields'
-                    : 'Form fields'),
+                    ? context.tr('Multipart fields', 'Campos multipart')
+                    : context.tr('Form fields', 'Campos do formulário')),
                 const Spacer(),
                 IconButton(
-                  tooltip: 'Adicionar campo de texto',
+                  tooltip: context.tr('Add text field', 'Adicionar campo de texto'),
                   onPressed: () => notifier.addFormField(),
                   icon: const Icon(Icons.add),
                 ),
                 if (params.bodyMode == BodyMode.formData)
                   IconButton(
-                    tooltip: 'Adicionar arquivo',
+                    tooltip: context.tr('Add file', 'Adicionar arquivo'),
                     onPressed: () => notifier.addFormField(isFile: true),
                     icon: const Icon(Icons.attach_file),
                   ),
@@ -1408,8 +1462,8 @@ class _HomePageState extends ConsumerState<HomePage>
                         child: TextFormField(
                           key: ValueKey('form-key-$index'),
                           initialValue: field.key,
-                          decoration: const InputDecoration(
-                            hintText: 'Key',
+                          decoration: InputDecoration(
+                            hintText: context.tr('Key', 'Chave'),
                             isDense: true,
                           ),
                           onChanged: (value) =>
@@ -1425,13 +1479,16 @@ class _HomePageState extends ConsumerState<HomePage>
                                   Expanded(
                                     child: Text(
                                       field.value.isEmpty
-                                          ? 'Nenhum arquivo selecionado'
+                                          ? context.tr(
+                                              'No file selected',
+                                              'Nenhum arquivo selecionado',
+                                            )
                                           : field.value.split('/').last,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   IconButton(
-                                    tooltip: 'Selecionar arquivo',
+                                    tooltip: context.tr('Select file', 'Selecionar arquivo'),
                                     onPressed: () async {
                                       final file = await openFile();
                                       if (file != null) {
@@ -1448,8 +1505,8 @@ class _HomePageState extends ConsumerState<HomePage>
                             : TextFormField(
                                 key: ValueKey('form-value-$index'),
                                 initialValue: field.value,
-                                decoration: const InputDecoration(
-                                  hintText: 'Value',
+                                decoration: InputDecoration(
+                                  hintText: context.tr('Value', 'Valor'),
                                   isDense: true,
                                 ),
                                 onChanged: (value) => notifier.updateFormField(
@@ -1459,7 +1516,7 @@ class _HomePageState extends ConsumerState<HomePage>
                               ),
                       ),
                       IconButton(
-                        tooltip: 'Remover campo',
+                        tooltip: context.tr('Remove field', 'Remover campo'),
                         onPressed: () => notifier.removeFormField(index),
                         icon: const Icon(Icons.delete_outline),
                       ),
@@ -1473,10 +1530,10 @@ class _HomePageState extends ConsumerState<HomePage>
               children: [
                 Expanded(
                   child: Text(params.body?.split('/').last ??
-                      'Nenhum arquivo selecionado'),
+                      context.tr('No file selected', 'Nenhum arquivo selecionado')),
                 ),
                 IconButton(
-                  tooltip: 'Selecionar arquivo',
+                  tooltip: context.tr('Select file', 'Selecionar arquivo'),
                   onPressed: () async {
                     final file = await openFile();
                     if (file != null) notifier.updateBody(file.path);
@@ -1499,13 +1556,16 @@ class _HomePageState extends ConsumerState<HomePage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Assertions após a resposta',
+          Text(
+            context.tr('Assertions after response', 'Asserções após a resposta'),
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
-            'Uma assertion por linha. Ex.: status == 200; responseTimeMs < 1000',
+            context.tr(
+              'One assertion per line. E.g.: status == 200; responseTimeMs < 1000',
+              'Uma asserção por linha. Ex.: status == 200; responseTimeMs < 1000',
+            ),
             style: TextStyle(
               fontSize: 12,
               color: isDark
@@ -1523,7 +1583,7 @@ class _HomePageState extends ConsumerState<HomePage>
               minLines: null,
               textAlignVertical: TextAlignVertical.top,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText:
                     'status == 200\nresponseTimeMs < 1000\ndata.id != null',
                 border: OutlineInputBorder(),
@@ -1652,12 +1712,22 @@ class _HomePageState extends ConsumerState<HomePage>
       await ref.read(workspaceProvider.notifier).selectWorkspace(workspace.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$count requests importadas.')),
+        SnackBar(
+          content: Text(context.tr(
+            '$count requests imported.',
+            '$count requests importadas.',
+          )),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Falha ao importar collection: $error')),
+        SnackBar(
+          content: Text(context.tr(
+            'Failed to import collection: $error',
+            'Falha ao importar collection: $error',
+          )),
+        ),
       );
     }
   }
@@ -1682,12 +1752,22 @@ class _HomePageState extends ConsumerState<HomePage>
       ).saveTo(location.path);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Collection exportada para ${location.path}')),
+        SnackBar(
+          content: Text(context.tr(
+            'Collection exported to ${location.path}',
+            'Collection exportada para ${location.path}',
+          )),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Falha ao exportar collection: $error')),
+        SnackBar(
+          content: Text(context.tr(
+            'Failed to export collection: $error',
+            'Falha ao exportar collection: $error',
+          )),
+        ),
       );
     }
   }
@@ -1729,16 +1809,18 @@ class _HomePageState extends ConsumerState<HomePage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Novo Workspace'),
+        title: Text(context.tr('New Workspace', 'Novo Workspace')),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: 'Nome do workspace'),
+          decoration: InputDecoration(
+            hintText: context.tr('Workspace name', 'Nome do workspace'),
+          ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(context.tr('Cancel', 'Cancelar')),
           ),
           TextButton(
             onPressed: () {
@@ -1749,7 +1831,7 @@ class _HomePageState extends ConsumerState<HomePage>
                 Navigator.pop(context);
               }
             },
-            child: const Text('Criar'),
+            child: Text(context.tr('Create', 'Criar')),
           ),
         ],
       ),
@@ -1766,21 +1848,25 @@ class _HomePageState extends ConsumerState<HomePage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Renomear Workspace'),
+        title: Text(context.tr('Rename Workspace', 'Renomear Workspace')),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: controller,
-            decoration: const InputDecoration(labelText: 'Nome do workspace'),
+            decoration: InputDecoration(
+              labelText: context.tr('Workspace name', 'Nome do workspace'),
+            ),
             autofocus: true,
             validator: (value) =>
-                value?.trim().isNotEmpty == true ? null : 'Informe um nome',
+                value?.trim().isNotEmpty == true
+                    ? null
+                    : context.tr('Enter a name', 'Informe um nome'),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(context.tr('Cancel', 'Cancelar')),
           ),
           TextButton(
             onPressed: () async {
@@ -1794,12 +1880,15 @@ class _HomePageState extends ConsumerState<HomePage>
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Falha ao renomear workspace: $error'),
+                    content: Text(context.tr(
+                      'Failed to rename workspace: $error',
+                      'Falha ao renomear workspace: $error',
+                    )),
                   ),
                 );
               }
             },
-            child: const Text('Salvar'),
+            child: Text(context.tr('Save', 'Salvar')),
           ),
         ],
       ),
@@ -1810,13 +1899,15 @@ class _HomePageState extends ConsumerState<HomePage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Deletar Workspace'),
-        content: const Text(
-            'Tem certeza que deseja deletar este workspace e todos os seus requests?'),
+        title: Text(context.tr('Delete Workspace', 'Excluir Workspace')),
+        content: Text(context.tr(
+          'Are you sure you want to delete this workspace and all its requests?',
+          'Tem certeza que deseja excluir este workspace e todas as suas requests?',
+        )),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(context.tr('Cancel', 'Cancelar')),
           ),
           TextButton(
             onPressed: () {
@@ -1824,7 +1915,10 @@ class _HomePageState extends ConsumerState<HomePage>
               Navigator.pop(context);
             },
             child:
-                const Text('Deletar', style: TextStyle(color: AppColors.error)),
+                Text(
+                  context.tr('Delete', 'Excluir'),
+                  style: const TextStyle(color: AppColors.error),
+                ),
           ),
         ],
       ),
@@ -1845,19 +1939,23 @@ class _HomePageState extends ConsumerState<HomePage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Novo Request'),
+          title: Text(context.tr('New Request', 'Novo Request')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(hintText: 'Nome do request'),
+                decoration: InputDecoration(
+                  hintText: context.tr('Request name', 'Nome do request'),
+                ),
                 autofocus: true,
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: urlController,
-                decoration: const InputDecoration(hintText: 'URL'),
+                decoration: InputDecoration(
+                  hintText: context.tr('URL', 'URL'),
+                ),
               ),
               const SizedBox(height: 8),
               Container(
@@ -1897,7 +1995,7 @@ class _HomePageState extends ConsumerState<HomePage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+              child: Text(context.tr('Cancel', 'Cancelar')),
             ),
             TextButton(
               onPressed: () {
@@ -1918,13 +2016,17 @@ class _HomePageState extends ConsumerState<HomePage>
                     Navigator.pop(context);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Selecione um workspace primeiro')),
+                      SnackBar(
+                        content: Text(context.tr(
+                            'Select a workspace first',
+                            'Selecione um workspace primeiro',
+                          )),
+                      ),
                     );
                   }
                 }
               },
-              child: const Text('Criar'),
+              child: Text(context.tr('Create', 'Criar')),
             ),
           ],
         ),
@@ -1942,12 +2044,14 @@ class _HomePageState extends ConsumerState<HomePage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Renomear Request'),
+        title: Text(context.tr('Rename Request', 'Renomear Request')),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: controller,
-            decoration: const InputDecoration(labelText: 'Nome do request'),
+            decoration: InputDecoration(
+              labelText: context.tr('Request name', 'Nome do request'),
+            ),
             autofocus: true,
             validator: (value) =>
                 value?.trim().isNotEmpty == true ? null : 'Informe um nome',
@@ -1956,7 +2060,7 @@ class _HomePageState extends ConsumerState<HomePage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(context.tr('Cancel', 'Cancelar')),
           ),
           TextButton(
             onPressed: () async {
@@ -1977,12 +2081,15 @@ class _HomePageState extends ConsumerState<HomePage>
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Falha ao renomear request: $error'),
+                    content: Text(context.tr(
+                      'Failed to rename request: $error',
+                      'Falha ao renomear request: $error',
+                    )),
                   ),
                 );
               }
             },
-            child: const Text('Salvar'),
+            child: Text(context.tr('Save', 'Salvar')),
           ),
         ],
       ),
@@ -2117,9 +2224,12 @@ class _HomePageState extends ConsumerState<HomePage>
     setState(() {});
   }
 
-  String _requestTabLabel(RequestTabSnapshot tab) {
+  String _requestTabLabel(BuildContext context, RequestTabSnapshot tab) {
     if (tab.name != 'New Request') return tab.name;
-    return _urlLabel(tab.params.url);
+    final label = _urlLabel(tab.params.url);
+    return label == 'New Request'
+        ? context.tr('New Request', 'Nova requisição')
+        : label;
   }
 
   String _urlLabel(String url) {

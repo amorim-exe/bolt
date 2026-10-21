@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../http_client/presentation/controllers/http_client_provider.dart';
 
 class EnvironmentDialog extends ConsumerWidget {
@@ -20,11 +21,11 @@ class EnvironmentDialog extends ConsumerWidget {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('Variáveis de Ambiente', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(context.tr('Environment Variables', 'Variáveis de Ambiente'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           IconButton(
             icon: const Icon(Icons.add, size: 18),
             onPressed: () => ref.read(httpClientProvider.notifier).addVariable(),
-            tooltip: 'Adicionar Variável',
+            tooltip: context.tr('Add Variable', 'Adicionar variável'),
           ),
         ],
       ),
@@ -32,7 +33,7 @@ class EnvironmentDialog extends ConsumerWidget {
         width: 450,
         height: 300,
         child: variables.isEmpty
-            ? Center(child: Text('Nenhuma variável cadastrada.', style: TextStyle(color: textColor)))
+            ? Center(child: Text(context.tr('No variables defined.', 'Nenhuma variável cadastrada.'), style: TextStyle(color: textColor)))
             : ListView.builder(
                 itemCount: variables.length,
                 itemBuilder: (context, index) {
@@ -50,7 +51,7 @@ class EnvironmentDialog extends ConsumerWidget {
                             controller: TextEditingController(text: v.key)
                               ..selection = TextSelection.collapsed(offset: v.key.length),
                             onChanged: (val) => ref.read(httpClientProvider.notifier).updateVariable(index, key: val),
-                            decoration: const InputDecoration(hintText: 'Chave (ex: baseUrl)', isDense: true, border: OutlineInputBorder()),
+                            decoration: InputDecoration(hintText: context.tr('Key (e.g. baseUrl)', 'Chave (ex: baseUrl)'), isDense: true, border: const OutlineInputBorder()),
                             style: const TextStyle(fontSize: 14),
                           ),
                         ),
@@ -60,7 +61,7 @@ class EnvironmentDialog extends ConsumerWidget {
                             controller: TextEditingController(text: v.value)
                               ..selection = TextSelection.collapsed(offset: v.value.length),
                             onChanged: (val) => ref.read(httpClientProvider.notifier).updateVariable(index, value: val),
-                            decoration: const InputDecoration(hintText: 'Valor', isDense: true, border: OutlineInputBorder()),
+                            decoration: InputDecoration(hintText: context.tr('Value', 'Valor'), isDense: true, border: const OutlineInputBorder()),
                             style: const TextStyle(fontSize: 14),
                           ),
                         ),
@@ -77,7 +78,7 @@ class EnvironmentDialog extends ConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Fechar', style: TextStyle(color: primaryTextColor)),
+          child: Text(context.tr('Close', 'Fechar'), style: TextStyle(color: primaryTextColor)),
         ),
       ],
     );

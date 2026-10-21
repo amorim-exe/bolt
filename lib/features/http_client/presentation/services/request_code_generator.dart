@@ -69,6 +69,9 @@ class RequestCodeGenerator {
           }
         }
     }
+    if (params.auth.type == AuthType.bearer) {
+        headers['Authorization'] = 'Bearer ${params.auth.token}';
+    }
     final fields = [
       for (final field in params.formFields)
         if (field.isEnabled && field.key.trim().isNotEmpty) field,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../domain/models/request_params.dart';
 import '../services/request_code_generator.dart';
 
@@ -30,7 +31,7 @@ class _CodeGenerationDialogState extends State<CodeGenerationDialog> {
 
     return AlertDialog(
       backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-      title: const Text('Generate Code'),
+      title: Text(context.tr('Generate Code', 'Gerar código')),
       content: SizedBox(
         width: 680,
         height: 440,
@@ -87,21 +88,27 @@ class _CodeGenerationDialogState extends State<CodeGenerationDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
+          child: Text(context.tr('Close', 'Fechar')),
         ),
         ElevatedButton.icon(
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: code));
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Code copied to clipboard'),
-                duration: Duration(seconds: 1),
+              SnackBar(
+                content: Text(context.tr(
+                  'Code copied to clipboard',
+                  'Código copiado para a área de transferência',
+                )),
+                duration: const Duration(seconds: 1),
               ),
             );
           },
           icon: const Icon(Icons.copy, size: 16),
-          label: const Text('Copy to clipboard'),
+          label: Text(context.tr(
+            'Copy to clipboard',
+            'Copiar para a área de transferência',
+          )),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: const Color(0xFF282018),

@@ -415,6 +415,10 @@ class HttpClientNotifier extends StateNotifier<HttpClientState> {
           ? 'Bearer ${auth.token}'
           : 'Basic ${base64Encode(utf8.encode('${auth.username}:${auth.password}'))}';
       headers.add(HeaderItem(key: 'Authorization', value: credential));
+      if (auth.type == AuthType.bearer) {
+        headers[headers.length - 1] =
+            HeaderItem(key: 'Authorization', value: 'Bearer ${auth.token}');
+      }
     } else if (auth.type == AuthType.apiKey && auth.apiKeyName.isNotEmpty) {
       if (auth.apiKeyLocation == ApiKeyLocation.header) {
         headers.removeWhere((header) =>

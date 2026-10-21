@@ -51,27 +51,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Collections'), findsNWidgets(2));
-    expect(find.text('History'), findsOneWidget);
-    expect(find.text('Response'), findsOneWidget);
-    expect(find.text('Params'), findsOneWidget);
+    expect(find.text('Histórico'), findsOneWidget);
+    expect(find.text('Resposta'), findsOneWidget);
+    expect(find.text('Parâmetros'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Nova aba'));
     await tester.pumpAndSettle();
     expect(container.read(requestTabsProvider).tabs, hasLength(2));
 
-    await tester.tap(find.byTooltip('Generate Code'));
+    await tester.tap(find.byTooltip('Gerar código'));
     await tester.pumpAndSettle();
-    expect(find.text('Generate Code'), findsOneWidget);
+    expect(find.text('Gerar código'), findsOneWidget);
     expect(find.text('cURL'), findsOneWidget);
     expect(find.text('JavaScript (Fetch)'), findsOneWidget);
     expect(find.text('Python (Requests)'), findsOneWidget);
     expect(find.text('Dart (Dio)'), findsOneWidget);
 
-    await tester.tap(find.text('Close'));
+    await tester.tap(find.text('Fechar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Auth'));
     await tester.pumpAndSettle();
-    expect(find.text('Authentication type'), findsOneWidget);
+    expect(find.text('Tipo de autenticação'), findsOneWidget);
     expect(
       find.text('Esta requisição será enviada sem autenticação.'),
       findsOneWidget,
@@ -79,13 +79,13 @@ void main() {
 
     await tester.tap(find.text('Tests').first);
     await tester.pumpAndSettle();
-    expect(find.text('Assertions após a resposta'), findsOneWidget);
+    expect(find.text('Asserções após a resposta'), findsOneWidget);
 
     await tester.tap(find.text('Tests').last);
     await tester.pumpAndSettle();
     expect(
       find.text(
-        'Sem testes executados. Adicione assertions na aba Tests e envie a requisição.',
+        'Sem testes executados. Adicione asserções na aba Tests e envie a requisição.',
       ),
       findsOneWidget,
     );
@@ -101,9 +101,17 @@ void main() {
 
     await tester.tap(find.text('Densidade compacta'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('language-dropdown')));
+    await tester.tap(find.byKey(const ValueKey('language-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('English').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Guardar'));
     await tester.pumpAndSettle();
     expect(settingsStore.settings.compactDensity, isTrue);
+    expect(settingsStore.settings.languageCode, 'en');
     expect(container.read(appSettingsProvider).settings.compactDensity, isTrue);
+    expect(find.text('Response'), findsOneWidget);
+    expect(find.text('History'), findsOneWidget);
   });
 }

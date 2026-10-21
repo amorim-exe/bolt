@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/request_params.dart';
 import '../controllers/http_client_provider.dart';
+import '../../../../core/localization/app_localizations.dart';
 
 class AuthEditorView extends ConsumerWidget {
   const AuthEditorView({super.key, required this.auth});
@@ -19,20 +20,30 @@ class AuthEditorView extends ConsumerWidget {
         children: [
           DropdownButtonFormField<AuthType>(
             initialValue: auth.type,
-            decoration: const InputDecoration(
-              labelText: 'Authentication type',
+            decoration: InputDecoration(
+              labelText:
+                  context.tr('Authentication type', 'Tipo de autenticação'),
               border: OutlineInputBorder(),
               isDense: true,
             ),
-            items: const [
-              DropdownMenuItem(value: AuthType.none, child: Text('None')),
+            items: [
+              DropdownMenuItem(
+                value: AuthType.none,
+                child: Text(context.tr('None', 'Nenhuma')),
+              ),
               DropdownMenuItem(
                 value: AuthType.bearer,
                 child: Text('Bearer Token'),
               ),
-              DropdownMenuItem(
+              const DropdownMenuItem(
                   value: AuthType.basic, child: Text('Basic Auth')),
-              DropdownMenuItem(value: AuthType.apiKey, child: Text('API Key')),
+              const DropdownMenuItem(value: AuthType.apiKey, child: Text('API Key')),
+            ],
+            selectedItemBuilder: (context) => [
+              Text(context.tr('None', 'Nenhuma')),
+              const Text('Bearer Token'),
+              const Text('Basic Auth'),
+              const Text('API Key'),
             ],
             onChanged: (type) {
               if (type != null) notifier.updateAuth(auth.copyWith(type: type));
@@ -41,20 +52,20 @@ class AuthEditorView extends ConsumerWidget {
           const SizedBox(height: 16),
           if (auth.type == AuthType.bearer)
             _field(
-              'Token',
+              context.tr('Token', 'Token'),
               auth.token,
               (value) => notifier.updateAuth(auth.copyWith(token: value)),
               secret: true,
             ),
           if (auth.type == AuthType.basic) ...[
             _field(
-              'Username',
+              context.tr('Username', 'Nome de usuário'),
               auth.username,
               (value) => notifier.updateAuth(auth.copyWith(username: value)),
             ),
             const SizedBox(height: 12),
             _field(
-              'Password',
+              context.tr('Password', 'Senha'),
               auth.password,
               (value) => notifier.updateAuth(auth.copyWith(password: value)),
               secret: true,
@@ -65,7 +76,7 @@ class AuthEditorView extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _field(
-                    'Key',
+                    context.tr('Key', 'Chave'),
                     auth.apiKeyName,
                     (value) =>
                         notifier.updateAuth(auth.copyWith(apiKeyName: value)),
@@ -74,7 +85,7 @@ class AuthEditorView extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _field(
-                    'Value',
+                    context.tr('Value', 'Valor'),
                     auth.apiKeyValue,
                     (value) =>
                         notifier.updateAuth(auth.copyWith(apiKeyValue: value)),
@@ -85,15 +96,15 @@ class AuthEditorView extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             SegmentedButton<ApiKeyLocation>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: ApiKeyLocation.header,
-                  label: Text('Header'),
+                  label: Text(context.tr('Header', 'Header')),
                   icon: Icon(Icons.short_text),
                 ),
                 ButtonSegment(
                   value: ApiKeyLocation.query,
-                  label: Text('Query Param'),
+                  label: Text(context.tr('Query Param', 'Parâmetro de consulta')),
                   icon: Icon(Icons.link),
                 ),
               ],
@@ -104,7 +115,10 @@ class AuthEditorView extends ConsumerWidget {
             ),
           ],
           if (auth.type == AuthType.none)
-            const Text('Esta requisição será enviada sem autenticação.'),
+            Text(context.tr(
+              'This request will be sent without authentication.',
+              'Esta requisição será enviada sem autenticação.',
+            )),
         ],
       ),
     );

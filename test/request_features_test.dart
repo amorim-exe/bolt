@@ -71,7 +71,8 @@ class _MemoryAppSettingsStore implements AppSettingsStore {
 
 void main() {
   group('Application settings', () {
-    test('persists settings and applies HTTP transport configuration', () async {
+    test('persists settings and applies HTTP transport configuration',
+        () async {
       final store = _MemoryAppSettingsStore();
       final notifier = AppSettingsNotifier(store);
       await Future<void>.delayed(Duration.zero);
@@ -91,6 +92,17 @@ void main() {
       expect(dioClient.dio.options.receiveTimeout, const Duration(seconds: 45));
       expect(dioClient.dio.options.followRedirects, isFalse);
       notifier.dispose();
+    });
+
+    test('defaults to Brazilian Portuguese and restores English from JSON', () {
+      expect(const AppSettings().languageCode, 'pt_BR');
+      final settings = AppSettings.fromJson({
+        ...const AppSettings().toJson(),
+        'languageCode': 'en',
+      });
+
+      expect(settings.languageCode, 'en');
+      expect(settings.copyWith(languageCode: 'pt_BR').languageCode, 'pt_BR');
     });
   });
 
@@ -188,6 +200,34 @@ void main() {
         remote.dispatchedParams!.headers.single.value,
         'Basic dXNlcjpwYXNz',
       );
+      client.dispose();
+      history.dispose();
+      tabs.dispose();
+    });
+
+    test('creates the Bearer Authorization header with the configured token',
+        () async {
+      final tabs = RequestTabsNotifier();
+      final history = RequestHistoryNotifier(_MemoryHistoryDatasource());
+      final remote = _CapturingHttpDatasource(success);
+      final client = HttpClientNotifier(remote, tabs, history);
+      client.updateAuth(
+        const RequestAuth(type: AuthType.bearer, token: 'token-value'),
+      );
+
+      await client.sendRequest();
+
+      expect(
+          remote.dispatchedParams!.headers.single.value, 'Bearer token-value');
+      final code = RequestCodeGenerator.generate(
+        RequestParams(
+          url: 'https://api.example.com',
+          method: HttpMethod.get,
+          auth: RequestAuth(type: AuthType.bearer, token: 'token-value'),
+        ),
+        RequestCodeFormat.curl,
+      );
+      expect(code, contains('Bearer token-value'));
       client.dispose();
       history.dispose();
       tabs.dispose();

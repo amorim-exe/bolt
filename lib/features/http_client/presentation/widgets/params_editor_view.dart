@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../domain/models/request_params.dart';
 import '../controllers/http_client_provider.dart';
 
@@ -23,15 +24,15 @@ class ParamsEditorView extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Query Parameters',
+              Text(
+                context.tr('Query Parameters', 'Parâmetros de consulta'),
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
               ),
               ElevatedButton.icon(
                 onPressed: () =>
                     ref.read(httpClientProvider.notifier).addQueryParam(),
                 icon: const Icon(Icons.add, size: 14),
-                label: const Text('Adicionar Param'),
+                label: Text(context.tr('Add Parameter', 'Adicionar parâmetro')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -53,7 +54,10 @@ class ParamsEditorView extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Parâmetros detetados automaticamente na URL',
+                  context.tr(
+                    'Parameters automatically detected from the URL',
+                    'Parâmetros detetados automaticamente na URL',
+                  ),
                   style: TextStyle(color: textColor, fontSize: 12),
                 ),
               ],
@@ -64,7 +68,10 @@ class ParamsEditorView extends ConsumerWidget {
             child: params.isEmpty
                 ? Center(
                     child: Text(
-                      'Nenhum parâmetro adicionado ainda.',
+                      context.tr(
+                        'No parameters added yet.',
+                        'Nenhum parâmetro adicionado ainda.',
+                      ),
                       style: TextStyle(color: textColor, fontSize: 14),
                     ),
                   )
@@ -154,10 +161,10 @@ class _QueryParameterRowState extends ConsumerState<_QueryParameterRow> {
               controller: _keyController,
               onChanged: (value) =>
                   notifier.updateQueryParam(widget.index, key: value),
-              decoration: const InputDecoration(
-                hintText: 'Chave (ex: page)',
+              decoration: InputDecoration(
+                hintText: context.tr('Key (e.g. page)', 'Chave (ex: page)'),
                 isDense: true,
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
               style: const TextStyle(fontSize: 14),
             ),
@@ -170,12 +177,12 @@ class _QueryParameterRowState extends ConsumerState<_QueryParameterRow> {
               onChanged: (value) =>
                   notifier.updateQueryParam(widget.index, value: value),
               decoration: InputDecoration(
-                hintText: 'Valor (ex: 1)',
+                hintText: context.tr('Value (e.g. 1)', 'Valor (ex: 1)'),
                 isDense: true,
                 border: const OutlineInputBorder(),
                 suffixIcon: widget.param.isAutoDetected
-                    ? const Tooltip(
-                        message: 'Detetado na URL',
+                    ? Tooltip(
+                        message: context.tr('Detected in URL', 'Detetado na URL'),
                         child: Icon(Icons.link, size: 16),
                       )
                     : null,

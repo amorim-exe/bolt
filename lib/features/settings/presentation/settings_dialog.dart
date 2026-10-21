@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/settings/app_settings.dart';
+import '../../../core/localization/app_localizations.dart';
 
 class SettingsDialog extends ConsumerStatefulWidget {
   const SettingsDialog({super.key});
@@ -45,7 +46,7 @@ class _SettingsDialogState extends ConsumerState<SettingsDialog> {
       _initialized = true;
     }
     return AlertDialog(
-      title: const Text('Configurações'),
+      title: Text(context.tr('Settings', 'Configurações')),
       content: SizedBox(
         width: 480,
         child: settingsState.isLoading
@@ -69,26 +70,52 @@ class _SettingsDialogState extends ConsumerState<SettingsDialog> {
                   ),
                   child: Text(settingsState.loadError!),
                 ),
-              Text('Aparência', style: Theme.of(context).textTheme.titleMedium),
+              Text(context.tr('Appearance', 'Aparência'),
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                key: const ValueKey('language-dropdown'),
+                initialValue: _draft.languageCode,
+                decoration: InputDecoration(
+                  labelText: context.tr('Language', 'Idioma'),
+                  border: const OutlineInputBorder(),
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: 'pt_BR',
+                    child: Text('Português (Brasil)'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'en',
+                    child: Text('English'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    _update((settings) =>
+                        settings.copyWith(languageCode: value));
+                  }
+                },
+              ),
               const SizedBox(height: 8),
               DropdownButtonFormField<ThemeMode>(
                 initialValue: _draft.themeMode,
-                decoration: const InputDecoration(
-                  labelText: 'Tema',
+                decoration: InputDecoration(
+                  labelText: context.tr('Theme', 'Tema'),
                   border: OutlineInputBorder(),
                 ),
-                items: const [
+                items: [
                   DropdownMenuItem(
                     value: ThemeMode.system,
-                    child: Text('Sistema'),
+                    child: Text(context.tr('System', 'Sistema')),
                   ),
                   DropdownMenuItem(
                     value: ThemeMode.light,
-                    child: Text('Claro'),
+                    child: Text(context.tr('Light', 'Claro')),
                   ),
                   DropdownMenuItem(
                     value: ThemeMode.dark,
-                    child: Text('Escuro'),
+                    child: Text(context.tr('Dark', 'Escuro')),
                   ),
                 ],
                 onChanged: (value) {
@@ -99,8 +126,11 @@ class _SettingsDialogState extends ConsumerState<SettingsDialog> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Densidade compacta'),
-                subtitle: const Text('Reduz o espaçamento dos controlos'),
+                title: Text(context.tr('Compact density', 'Densidade compacta')),
+                subtitle: Text(context.tr(
+                  'Reduces control spacing',
+                  'Reduz o espaçamento dos controlos',
+                )),
                 value: _draft.compactDensity,
                 onChanged: (value) => _update(
                   (settings) => settings.copyWith(compactDensity: value),
@@ -108,7 +138,7 @@ class _SettingsDialogState extends ConsumerState<SettingsDialog> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Tamanho do texto'),
+                title: Text(context.tr('Text size', 'Tamanho do texto')),
                 subtitle: Slider(
                   value: _draft.textScale,
                   min: 0.8,
@@ -123,12 +153,12 @@ class _SettingsDialogState extends ConsumerState<SettingsDialog> {
               ),
               const Divider(height: 24),
               Text(
-                'Requisições',
+                context.tr('Requests', 'Requisições'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Timeout'),
+                title: Text(context.tr('Timeout', 'Timeout')),
                 subtitle: Slider(
                   value: _draft.timeoutSeconds.toDouble(),
                   min: 5,
@@ -145,7 +175,10 @@ class _SettingsDialogState extends ConsumerState<SettingsDialog> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Seguir redirecionamentos'),
+                title: Text(context.tr(
+                  'Follow redirects',
+                  'Seguir redirecionamentos',
+                )),
                 value: _draft.followRedirects,
                 onChanged: (value) => _update(
                   (settings) => settings.copyWith(followRedirects: value),
@@ -153,11 +186,20 @@ class _SettingsDialogState extends ConsumerState<SettingsDialog> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Validar certificados SSL'),
+                title: Text(context.tr(
+                  'Verify SSL certificates',
+                  'Validar certificados SSL',
+                )),
                 subtitle: Text(
                   _draft.verifySslCertificates
-                      ? 'Certificados inválidos serão rejeitados.'
-                      : 'Aviso: certificados inválidos serão aceites para todas as requisições.',
+                      ? context.tr(
+                          'Invalid certificates will be rejected.',
+                          'Certificados inválidos serão rejeitados.',
+                        )
+                      : context.tr(
+                          'Warning: invalid certificates will be accepted for all requests.',
+                          'Aviso: certificados inválidos serão aceites para todas as requisições.',
+                        ),
                 ),
                 value: _draft.verifySslCertificates,
                 onChanged: (value) => _update(
@@ -179,7 +221,7 @@ class _SettingsDialogState extends ConsumerState<SettingsDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
+          child: Text(context.tr('Cancel', 'Cancelar')),
         ),
         FilledButton(
           onPressed:
@@ -190,7 +232,7 @@ class _SettingsDialogState extends ConsumerState<SettingsDialog> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Guardar'),
+              : Text(context.tr('Save', 'Guardar')),
         ),
       ],
     );
