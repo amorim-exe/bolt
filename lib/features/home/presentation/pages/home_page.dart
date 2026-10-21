@@ -1,3 +1,4 @@
+// lib/features/home/presentation/pages/home_page.dart
 import 'dart:convert';
 import 'package:bolt/core/theme/theme_provider.dart';
 import 'package:bolt/features/environment/presentation/environment_dialog.dart';
@@ -58,10 +59,10 @@ class _HomePageState extends ConsumerState<HomePage>
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
-        vertical: 4,
+        vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF20242B) : const Color(0xFFF0F2F5),
+        color: isDark ? AppColors.surfaceDark : AppColors.backgroundLight,
         border: Border(
           bottom: BorderSide(color: borderColor),
         ),
@@ -71,7 +72,7 @@ class _HomePageState extends ConsumerState<HomePage>
           Icon(
             icon,
             size: 16,
-            color: isDark ? Colors.lightBlueAccent : Colors.blueGrey,
+            color: AppColors.primary,
           ),
           const SizedBox(width: 8),
           Text(
@@ -79,7 +80,7 @@ class _HomePageState extends ConsumerState<HomePage>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white70 : Colors.blueGrey.shade700,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             ),
           ),
           const Spacer(),
@@ -124,266 +125,252 @@ class _HomePageState extends ConsumerState<HomePage>
     return Scaffold(
       body: Row(
         children: [
-          // Barra lateral de coleções e ferramentas
+          // -----------------------------------------------------------------
+          // BARRA LATERAL ESTILO BRUNO / POSTMAN (Com cores do Bolt)
+          // -----------------------------------------------------------------
           Container(
-            width: 240,
+            width: 260,
             color: surfaceColor,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Image.asset(
-                    'assets/images/logo-bolt.png',
-                    height: 32,
+                // Topo: Seletor de Workspace
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: borderColor)),
                   ),
-                ),
-
-                // Botão de Variáveis de Ambiente
-                Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    leading: const Icon(Icons.code,
-                        size: 18, color: AppColors.primary),
-                    title:
-                        const Text('Variáveis', style: TextStyle(fontSize: 14)),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => const EnvironmentDialog(),
-                      );
-                    },
-                  ),
-                ),
-
-                // Botão de Alternar Tema (Dark/Light)
-                Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    leading: Icon(
-                      isDark ? Icons.light_mode : Icons.dark_mode,
-                      size: 18,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(
-                      isDark ? 'Modo Claro' : 'Modo Escuro',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    onTap: () {
-                      final currentMode = ref.read(themeModeProvider);
-                      ref.read(themeModeProvider.notifier).state =
-                          currentMode == ThemeMode.dark
-                              ? ThemeMode.light
-                              : ThemeMode.dark;
-                    },
-                  ),
-                ),
-
-                Divider(height: 1, color: borderColor),
-
-                // Lista de Workspaces
-                Expanded(
-                  child: Column(
+                  child: Row(
                     children: [
-                      // Header com botão de adicionar workspace
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8.0, vertical: 4.0),
-                        child: Row(
-                          children: [
-                            const Text('Workspaces',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 12)),
-                            const Spacer(),
-                            IconButton(
-                              icon: const Icon(Icons.add, size: 16),
-                              onPressed: () => _showAddWorkspaceDialog(context),
-                              tooltip: 'Adicionar Workspace',
-                              padding: const EdgeInsets.all(4),
-                            ),
-                          ],
+                      const Icon(Icons.folder_shared, size: 18, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Collections',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
-                      Divider(height: 1, color: borderColor),
-                      // Lista de workspaces e requests
-                      Expanded(
-                        child: workspaceState.isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : ListView.builder(
-                                padding: const EdgeInsets.all(4),
-                                itemCount: workspaceState.workspaces.length,
-                                itemBuilder: (context, index) {
-                                  final workspace =
-                                      workspaceState.workspaces[index];
-                                  final isSelected =
-                                      workspaceState.selectedWorkspace?.id ==
-                                          workspace.id;
-                                  final isExpanded = workspaceState
-                                      .expandedWorkspaces
-                                      .contains(workspace.id);
-                                  final requests = ref
-                                      .read(workspaceProvider.notifier)
-                                      .getRequestsForWorkspace(workspace.id);
+                      IconButton(
+                        icon: const Icon(Icons.add, size: 16),
+                        onPressed: () => _showAddWorkspaceDialog(context),
+                        tooltip: 'Novo Workspace',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.create_new_folder_outlined, size: 16),
+                        onPressed: () => _showAddRequestDialog(context),
+                        tooltip: 'Novo Request',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
 
-                                  return Column(
-                                    children: [
-                                      // Workspace item
-                                      Material(
-                                        color: isSelected
-                                            ? surfaceColor.withValues(
-                                                alpha: 0.5)
-                                            : Colors.transparent,
+                // Lista de Workspaces e Requisições
+                Expanded(
+                  child: workspaceState.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          itemCount: workspaceState.workspaces.length,
+                          itemBuilder: (context, index) {
+                            final workspace = workspaceState.workspaces[index];
+                            final isSelected =
+                                workspaceState.selectedWorkspace?.id ==
+                                    workspace.id;
+                            final isExpanded = workspaceState
+                                .expandedWorkspaces
+                                .contains(workspace.id);
+                            final requests = ref
+                                .read(workspaceProvider.notifier)
+                                .getRequestsForWorkspace(workspace.id);
+
+                            return Column(
+                              children: [
+                                Material(
+                                  color: isSelected
+                                      ? surfaceColor.withValues(alpha: 0.5)
+                                      : Colors.transparent,
+                                  child: ListTile(
+                                    leading: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isExpanded
+                                              ? Icons.expand_more
+                                              : Icons.chevron_right,
+                                          size: 16,
+                                          color: isDark
+                                              ? AppColors.textSecondaryDark
+                                              : AppColors.textSecondaryLight,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          isSelected
+                                              ? Icons.folder_open
+                                              : Icons.folder,
+                                          size: 18,
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : null,
+                                        ),
+                                      ],
+                                    ),
+                                    title: Text(
+                                      workspace.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit, size: 14),
+                                          onPressed: () =>
+                                              _showRenameWorkspaceDialog(
+                                            context,
+                                            workspace.id,
+                                            workspace.name,
+                                          ),
+                                          tooltip: 'Renomear Workspace',
+                                          padding: const EdgeInsets.all(4),
+                                          constraints: const BoxConstraints(),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        IconButton(
+                                          icon: const Icon(
+                                              Icons.delete_outline,
+                                              size: 14),
+                                          onPressed: () =>
+                                              _showDeleteWorkspaceDialog(
+                                                  context, workspace.id),
+                                          tooltip: 'Deletar Workspace',
+                                          padding: const EdgeInsets.all(4),
+                                          constraints: const BoxConstraints(),
+                                        ),
+                                      ],
+                                    ),
+                                    dense: true,
+                                    onTap: () {
+                                      ref
+                                          .read(workspaceProvider.notifier)
+                                          .toggleWorkspaceExpanded(
+                                              workspace.id);
+
+                                      ref
+                                          .read(workspaceProvider.notifier)
+                                          .selectWorkspace(workspace.id);
+                                    },
+                                  ),
+                                ),
+                                if (isExpanded)
+                                  ...requests.map((request) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(left: 12.0),
+                                      child: Material(
+                                        color: Colors.transparent,
                                         child: ListTile(
-                                          leading: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                isExpanded
-                                                    ? Icons.expand_more
-                                                    : Icons.chevron_right,
-                                                size: 16,
-                                                color: isDark
-                                                    ? AppColors
-                                                        .textSecondaryDark
-                                                    : AppColors
-                                                        .textSecondaryLight,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                isSelected
-                                                    ? Icons.folder_open
-                                                    : Icons.folder,
-                                                size: 18,
-                                                color: isSelected
-                                                    ? AppColors.primary
-                                                    : null,
-                                              ),
-                                            ],
+                                          leading: Icon(
+                                            Icons.bolt,
+                                            size: 14,
+                                            color: _getMethodColorFromString(
+                                                request.method),
                                           ),
                                           title: Text(
-                                            workspace.name,
+                                            request.name,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style:
-                                                const TextStyle(fontSize: 14),
+                                            style: const TextStyle(fontSize: 12),
                                           ),
                                           trailing: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               IconButton(
                                                 icon: const Icon(Icons.edit,
-                                                    size: 16),
+                                                    size: 12),
                                                 onPressed: () =>
-                                                    _showRenameWorkspaceDialog(
+                                                    _showRenameRequestDialog(
                                                   context,
-                                                  workspace.id,
-                                                  workspace.name,
+                                                  request.id,
+                                                  request.name,
                                                 ),
-                                                tooltip: 'Renomear Workspace',
-                                                padding:
-                                                    const EdgeInsets.all(4),
+                                                tooltip: 'Renomear Request',
+                                                padding: const EdgeInsets.all(4),
+                                                constraints:
+                                                    const BoxConstraints(),
                                               ),
+                                              const SizedBox(width: 4),
                                               IconButton(
                                                 icon: const Icon(
                                                     Icons.delete_outline,
-                                                    size: 16),
-                                                onPressed: () =>
-                                                    _showDeleteWorkspaceDialog(
-                                                        context, workspace.id),
-                                                tooltip: 'Deletar Workspace',
-                                                padding:
-                                                    const EdgeInsets.all(4),
+                                                    size: 12),
+                                                onPressed: () => ref
+                                                    .read(workspaceProvider
+                                                        .notifier)
+                                                    .deleteRequest(request.id),
+                                                tooltip: 'Deletar Request',
+                                                padding: const EdgeInsets.all(4),
+                                                constraints:
+                                                    const BoxConstraints(),
                                               ),
                                             ],
                                           ),
                                           dense: true,
-                                          onTap: () {
-                                            ref
-                                                .read(
-                                                    workspaceProvider.notifier)
-                                                .toggleWorkspaceExpanded(
-                                                    workspace.id);
-
-                                            ref
-                                                .read(
-                                                    workspaceProvider.notifier)
-                                                .selectWorkspace(workspace.id);
-                                          },
+                                          onTap: () => _loadRequest(request),
                                         ),
                                       ),
-                                      // Requests do workspace (expandido)
-                                      if (isExpanded)
-                                        ...requests.map((request) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 16.0),
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: ListTile(
-                                                leading: Icon(
-                                                  Icons.bolt,
-                                                  size: 14,
-                                                  color:
-                                                      _getMethodColorFromString(
-                                                          request.method),
-                                                ),
-                                                title: Text(
-                                                  request.name,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                      fontSize: 13),
-                                                ),
-                                                trailing: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                          Icons.edit,
-                                                          size: 14),
-                                                      onPressed: () =>
-                                                          _showRenameRequestDialog(
-                                                        context,
-                                                        request.id,
-                                                        request.name,
-                                                      ),
-                                                      tooltip:
-                                                          'Renomear Request',
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              4),
-                                                    ),
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                          Icons.delete_outline,
-                                                          size: 14),
-                                                      onPressed: () => ref
-                                                          .read(
-                                                              workspaceProvider
-                                                                  .notifier)
-                                                          .deleteRequest(
-                                                              request.id),
-                                                      tooltip:
-                                                          'Deletar Request',
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              4),
-                                                    ),
-                                                  ],
-                                                ),
-                                                dense: true,
-                                                onTap: () =>
-                                                    _loadRequest(request),
-                                              ),
-                                            ),
-                                          );
-                                        }),
-                                    ],
-                                  );
-                                },
-                              ),
+                                    );
+                                  }),
+                              ],
+                            );
+                          },
+                        ),
+                ),
+
+                // Rodapé da Barra Lateral
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: borderColor)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.code, size: 18),
+                        tooltip: 'Variáveis de Ambiente',
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => const EnvironmentDialog(),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          isDark ? Icons.light_mode : Icons.dark_mode,
+                          size: 18,
+                        ),
+                        tooltip: isDark ? 'Modo Claro' : 'Modo Escuro',
+                        onPressed: () {
+                          final currentMode = ref.read(themeModeProvider);
+                          ref.read(themeModeProvider.notifier).state =
+                              currentMode == ThemeMode.dark
+                                  ? ThemeMode.light
+                                  : ThemeMode.dark;
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.settings_outlined, size: 18),
+                        tooltip: 'Configurações',
+                        onPressed: () {},
                       ),
                     ],
                   ),
@@ -393,7 +380,9 @@ class _HomePageState extends ConsumerState<HomePage>
           ),
           VerticalDivider(width: 1, thickness: 1, color: borderColor),
 
-          // Painel Principal de Requisição e Resposta
+          // -----------------------------------------------------------------
+          // PAINEL PRINCIPAL
+          // -----------------------------------------------------------------
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -404,10 +393,10 @@ class _HomePageState extends ConsumerState<HomePage>
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         decoration: BoxDecoration(
                           color: surfaceColor,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: borderColor),
                         ),
                         child: DropdownButtonHideUnderline(
@@ -421,6 +410,7 @@ class _HomePageState extends ConsumerState<HomePage>
                                   method.name.toUpperCase(),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 12,
                                     color: _getMethodColor(method),
                                   ),
                                 ),
@@ -437,38 +427,31 @@ class _HomePageState extends ConsumerState<HomePage>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: () => _showAddRequestDialog(context),
-                        icon: const Icon(Icons.add),
-                        tooltip: 'Adicionar Request',
-                        style: IconButton.styleFrom(
-                          backgroundColor: surfaceColor,
-                          side: BorderSide(color: borderColor),
-                          padding: const EdgeInsets.all(14),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
-                        child: TextField(
-                          controller: _urlController,
-                          onChanged: (val) => ref
-                              .read(httpClientProvider.notifier)
-                              .updateUrl(val),
-                          decoration: InputDecoration(
-                            hintText:
-                                'Digite a URL da API (ex: {{baseUrl}}/todos/1)',
-                            filled: true,
-                            fillColor: surfaceColor,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: TextField(
+                            controller: _urlController,
+                            onChanged: (val) => ref
+                                .read(httpClientProvider.notifier)
+                                .updateUrl(val),
+                            decoration: const InputDecoration(
+                              hintText:
+                                  'Digite a URL da API (ex: {{baseUrl}}/todos/1)',
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                              isDense: true,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
+                            style: const TextStyle(fontSize: 13),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       ElevatedButton.icon(
                         onPressed: state.isLoading
                             ? null
@@ -479,21 +462,22 @@ class _HomePageState extends ConsumerState<HomePage>
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 18),
+                              horizontal: 20, vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                              borderRadius: BorderRadius.circular(6)),
                         ),
                         icon: state.isLoading
                             ? const SizedBox(
-                                width: 16,
-                                height: 16,
+                                width: 14,
+                                height: 14,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white))
-                            : const Icon(Icons.send, size: 16),
+                            : const Icon(Icons.send, size: 14),
                         label: const Text('Send',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       IconButton(
                         onPressed: () async {
                           final workspaceState = ref.read(workspaceProvider);
@@ -558,19 +542,21 @@ class _HomePageState extends ConsumerState<HomePage>
                             );
                           }
                         },
-                        icon: const Icon(Icons.save_outlined),
+                        icon: const Icon(Icons.save_outlined, size: 18),
                         tooltip: 'Salvar Requisição',
                         style: IconButton.styleFrom(
                           backgroundColor: surfaceColor,
                           side: BorderSide(color: borderColor),
-                          padding: const EdgeInsets.all(14),
+                          padding: const EdgeInsets.all(10),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6)),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Área de Configuração da Requisição (Abas: Params, Headers, Body)
+                  // Área de Configuração da Requisição (Abas)
                   Expanded(
                     flex: 1,
                     child: Container(
@@ -611,7 +597,7 @@ class _HomePageState extends ConsumerState<HomePage>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // Área de Resposta
                   Expanded(
@@ -626,7 +612,6 @@ class _HomePageState extends ConsumerState<HomePage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Cabeçalho
                           Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -640,6 +625,7 @@ class _HomePageState extends ConsumerState<HomePage>
                                   'Response',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 13,
                                   ),
                                 ),
                                 const Spacer(),
@@ -664,8 +650,6 @@ class _HomePageState extends ConsumerState<HomePage>
                             ),
                           ),
                           Divider(height: 1, color: borderColor),
-
-                          // Abas
                           TabBar(
                             controller: _responseTabController,
                             tabs: const [
@@ -680,7 +664,6 @@ class _HomePageState extends ConsumerState<HomePage>
                             indicatorSize: TabBarIndicatorSize.label,
                           ),
                           Divider(height: 1, color: borderColor),
-
                           Expanded(
                             child: TabBarView(
                               controller: _responseTabController,
@@ -711,16 +694,16 @@ class _HomePageState extends ConsumerState<HomePage>
                                           child: Container(
                                             width: double.infinity,
                                             color: isDark
-                                                ? const Color(0xFF171A21)
-                                                : const Color(0xFFFAFAFC),
+                                                ? AppColors.backgroundDark
+                                                : AppColors.backgroundLight,
                                             child: state.response == null
                                                 ? Center(
                                                     child: Text(
                                                       'Execute uma requisição para ver a resposta.',
                                                       style: TextStyle(
                                                         color: isDark
-                                                            ? Colors.white54
-                                                            : Colors.black54,
+                                                            ? AppColors.textSecondaryDark
+                                                            : AppColors.textSecondaryLight,
                                                       ),
                                                     ),
                                                   )
@@ -735,10 +718,8 @@ class _HomePageState extends ConsumerState<HomePage>
                                                         fontSize: 13,
                                                         height: 1.6,
                                                         color: isDark
-                                                            ? const Color(
-                                                                0xFFD6DEEB)
-                                                            : const Color(
-                                                                0xFF273142),
+                                                            ? AppColors.textPrimaryDark
+                                                            : AppColors.textPrimaryLight,
                                                       ),
                                                     ),
                                                   ),
@@ -779,16 +760,16 @@ class _HomePageState extends ConsumerState<HomePage>
                                           child: Container(
                                             width: double.infinity,
                                             color: isDark
-                                                ? const Color(0xFF171A21)
-                                                : const Color(0xFFFAFAFC),
+                                                ? AppColors.backgroundDark
+                                                : AppColors.backgroundLight,
                                             child: state.response == null
                                                 ? Center(
                                                     child: Text(
                                                       'Nenhum header recebido.',
                                                       style: TextStyle(
                                                         color: isDark
-                                                            ? Colors.white54
-                                                            : Colors.black54,
+                                                            ? AppColors.textSecondaryDark
+                                                            : AppColors.textSecondaryLight,
                                                       ),
                                                     ),
                                                   )
@@ -816,12 +797,10 @@ class _HomePageState extends ConsumerState<HomePage>
                                                                         text:
                                                                             '${entry.key}: ',
                                                                         style:
-                                                                            TextStyle(
+                                                                            const TextStyle(
                                                                           fontWeight:
                                                                               FontWeight.bold,
-                                                                          color: isDark
-                                                                              ? Colors.lightBlueAccent
-                                                                              : Colors.blue.shade800,
+                                                                          color: AppColors.primary,
                                                                         ),
                                                                       ),
                                                                       TextSpan(
@@ -831,8 +810,8 @@ class _HomePageState extends ConsumerState<HomePage>
                                                                         style:
                                                                             TextStyle(
                                                                           color: isDark
-                                                                              ? const Color(0xFFD6DEEB)
-                                                                              : const Color(0xFF273142),
+                                                                              ? AppColors.textPrimaryDark
+                                                                              : AppColors.textPrimaryLight,
                                                                         ),
                                                                       ),
                                                                     ],
@@ -876,7 +855,7 @@ class _HomePageState extends ConsumerState<HomePage>
       case HttpMethod.get:
         return AppColors.accent;
       case HttpMethod.post:
-        return Colors.blueAccent;
+        return AppColors.primary;
       case HttpMethod.put:
         return Colors.orangeAccent;
       case HttpMethod.delete:
@@ -1089,7 +1068,7 @@ class _HomePageState extends ConsumerState<HomePage>
       child: Text(
         'Status: $code',
         style:
-            TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14),
+            TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
       ),
     );
   }
@@ -1101,7 +1080,7 @@ class _HomePageState extends ConsumerState<HomePage>
       children: [
         Icon(icon, size: 14, color: secondaryColor),
         const SizedBox(width: 4),
-        Text(text, style: TextStyle(fontSize: 14, color: secondaryColor)),
+        Text(text, style: TextStyle(fontSize: 13, color: secondaryColor)),
       ],
     );
   }
@@ -1456,7 +1435,7 @@ class _HomePageState extends ConsumerState<HomePage>
       case 'GET':
         return AppColors.accent;
       case 'POST':
-        return Colors.blueAccent;
+        return AppColors.primary;
       case 'PUT':
         return Colors.orangeAccent;
       case 'DELETE':
@@ -1464,7 +1443,7 @@ class _HomePageState extends ConsumerState<HomePage>
       case 'PATCH':
         return Colors.purpleAccent;
       default:
-        return Colors.grey;
+        return AppColors.textSecondaryDark;
     }
   }
 }
