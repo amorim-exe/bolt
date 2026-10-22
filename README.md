@@ -5,7 +5,7 @@
 A modern workspace designed to simplify API development, streamline your workflow, and boost your productivity.
 
 <p align="center">
-<img src="./assets/images/home2.png" alt="Bolt — Application Preview" width="850">
+<img src="./assets/images/readme.png" alt="Bolt — Application Preview" width="850">
 </p>
 
 <p align="center">
